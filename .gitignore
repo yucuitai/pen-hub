@@ -1,0 +1,47 @@
+# === 通用 ===
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+
+# === 后端 (Java/Spring Boot) ===
+pen-hub-backend/target/
+pen-hub-backend/*.class
+pen-hub-backend/*.jar
+pen-hub-backend/*.war
+pen-hub-backend/.mvn/
+pen-hub-backend/mvnw
+pen-hub-backend/mvnw.cmd
+pen-hub-backend/application-local.yml
+pen-hub-backend/application-local.properties
+
+# === 前端 (Vue/Node) ===
+pen-hub-frontend/node_modules/
+pen-hub-frontend/dist/
+pen-hub-frontend/.vite/
+pen-hub-frontend/*.local
+pen-hub-frontend/.env.local
+pen-hub-frontend/.env.*.local
+
+# === 环境配置 ===
+.env
+.env.local
+.env.*.local
+
+# === 数据库文件 ===
+*.db
+*.sqlite
+*.sqlite3
