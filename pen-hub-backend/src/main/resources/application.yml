@@ -5,9 +5,9 @@ spring:
   profiles:
     active: local
   # mybatis-flex
-  mybatis-flex:
-    configuration:
-      map-underscore-to-camel-case: false # 禁止将数据库中下划线命名映射为驼峰命名
+#  mybatis-flex:
+#    configuration:
+#      map-underscore-to-camel-case: false # 禁止将数据库中下划线命名映射为驼峰命名
   # session 配置
   session:
     store-type: redis
