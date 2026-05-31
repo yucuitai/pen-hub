@@ -4,15 +4,24 @@ spring:
   # 激活本地配置（敏感信息）
   profiles:
     active: local
-  # mybatis-flex
-#  mybatis-flex:
-#    configuration:
-#      map-underscore-to-camel-case: false # 禁止将数据库中下划线命名映射为驼峰命名
   # session 配置
   session:
     store-type: redis
     # session 30 天过期
     timeout: 2592000
+#  # MySQL 数据库配置
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://localhost:3306/ai_passage_creator
+#    username: root
+#    password: 123456
+#  # Redis 配置
+#  data:
+#    redis:
+#      host: ${SPRING_DATA_REDIS_HOST}
+#      port: 6379
+#      database: 0
+#      password:
 server:
   port: 8567
   servlet:
@@ -21,6 +30,11 @@ server:
     session:
       cookie:
         max-age: 2592000
+
+# mybatis-flex
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: true # 将数据库中下划线命名映射为驼峰命名
 # springdoc-openapi项目配置
 springdoc:
   group-configs:
@@ -37,4 +51,23 @@ knife4j:
 logging:
   level:
     org.springframework.jdbc.support.JdbcTransactionManager: debug
+    com.pen.penhubbackend.mapper: debug
+
+# Pexels API 配置
+
+# Nano Banana (Gemini 原生图片生成) 配置
+nano-banana:
+
+# Mermaid 图表生成配置
+
+
+# Iconify 图标库配置
+
+
+# 表情包图片检索配置
+
+# SVG 概念示意图生成配置
+
+
+# 文章智能体配置
 
