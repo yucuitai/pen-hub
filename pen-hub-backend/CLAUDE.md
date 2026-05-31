@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 笔枢 (Pen Hub) -- AI 驱动的写作平台后端，基于 Spring Boot 3.5 + Java 21。
 
+
 ## 常用命令
 
 ```bash
@@ -31,9 +32,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 技术栈
 
 - **ORM**: MyBatis-Flex（不是 MyBatis-Plus），使用 `@Table`、`@Column` 注解
+- **数据库连接池**: HikariCP（必须显式添加，MyBatis-Flex starter 不包含）
 - **会话管理**: Spring Session + Redis（非 JWT）
+- **图片存储**: FTP 上传（宝塔 Pure-FTP）+ Nginx 静态资源映射
 - **API 文档**: Knife4j (OpenAPI 3)，访问 `/api/doc.html`
-- **工具库**: Hutool 5.x、Lombok
+- **工具库**: Hutool 5.x、Lombok、OkHttp、Gson
 - **AOP**: 已启用 `@EnableAspectJAutoProxy(exposeProxy = true)`
 
 ### 编码补充（ECC Java 规则之外）
@@ -126,7 +129,7 @@ throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
 - 8 大模块规划（用户、创作、三阶段交互、多模态图片、智能编排、VIP、文章管理、日志监控）
 - 三阶段创作流程：标题生成 → 大纲生成（用户编辑）→ 内容生成 + 并行图片生成
 - 图片策略模式：Pexels、Mermaid、Iconify、NanoBanana AI、Picsum 兜底
-- 存储：MySQL 8.0 + Redis 7.x + 腾讯云 COS
+- 存储：MySQL 8.0 + Redis 7.x + FTP 图片服务器（腾讯云 COS 备选）
 - 支付：Stripe + Webhook 验证
 
 ## 开发日志
@@ -155,3 +158,27 @@ throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
 - 使用 `@Serial` 注解替代手动 serialVersionUID
 - 移除冗余的手动 getter/setter/equals/hashCode/toString
 - 确保 `camelToUnderline` 默认为 true（数据库下划线 ↔ 实体类驼峰）
+
+### 2026-05-31
+
+**MyBatis-Flex 启动修复：**
+- 问题：`Property 'sqlSessionFactory' or 'sqlSessionTemplate' are required`
+- 原因：缺少 HikariCP 数据库连接池依赖。MyBatis-Flex 的 `mybatis-flex-spring-boot3-starter` 只引入了 `spring-jdbc`，不包含 `spring-boot-starter-jdbc`（含 HikariCP + 自动配置）
+- 修复：`pom.xml` 添加 `com.zaxxer:HikariCP`（版本由 Spring Boot Parent 管理）
+- 注意：`@MapperScan("com.pen.penhubbackend.mapper")` 必须保留（官方文档要求）
+
+**FTP 图片上传功能：**
+- 实现：`CosService` 中新增 FTP 上传方法（`uploadToFtp`、`uploadFromUrlToFtp`、`uploadFromDataUrlToFtp`、`uploadImageDataToFtp`）
+- 配置类：`FtpConfig.java`（prefix: `ftp`）
+- 服务器：宝塔面板 + Pure-FTP（虚拟用户体系）
+- Nginx 映射：`/images/` → `/www/wwwroot/picture/`（配置文件在服务器 `/www/server/panel/vhost/nginx/images.conf`）
+
+**踩坑记录：**
+- Pure-FTP `UnixAuthentication no` + `MinUID 100`：禁止系统用户（如 root）登录，必须在宝塔面板创建 FTP 虚拟用户
+- Pure-FTP `ChrootEveryone yes`：FTP 用户被限制在主目录内，`base-path` 必须设为 `/`（不能写完整路径，否则路径会重复：`/www/wwwroot/picture/www/wwwroot/picture/...`）
+- 被动模式端口范围：`39000-40000`，服务器防火墙需放行
+
+**待完成：**
+- 图片存储策略完善（FTP 为主，COS 为备）
+- 图片访问 URL 统一处理
+- FTP 上传的异常处理和重试机制

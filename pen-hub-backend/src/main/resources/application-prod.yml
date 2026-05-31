@@ -23,7 +23,6 @@ spring:
   ai:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:}
-
 # Pexels API 配置
 pexels:
   api-key: ${PEXELS_API_KEY:}
