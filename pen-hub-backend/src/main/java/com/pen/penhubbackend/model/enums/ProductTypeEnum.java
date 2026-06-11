@@ -11,7 +11,9 @@ import java.math.BigDecimal;
 @Getter
 public enum ProductTypeEnum {
 
-    VIP_PERMANENT("VIP_PERMANENT", "永久会员", new BigDecimal("199.00"));
+    VIP_PERMANENT("VIP_PERMANENT", "永久会员", new BigDecimal("199.00")),
+    VIP_MONTHLY("VIP_MONTHLY", "月度会员", null),
+    VIP_YEARLY("VIP_YEARLY", "年度会员", null);
 
     private final String value;
     private final String description;

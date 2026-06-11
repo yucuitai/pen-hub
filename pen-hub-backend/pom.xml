@@ -161,6 +161,26 @@
             <version>3.9.0</version>
         </dependency>
 
+        <!-- Google Gen AI Java SDK (Nano Banana 图片生成) -->
+        <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>1.35.0</version>
+        </dependency>
+        <!-- Jakarta Annotation API (替代 javax.annotation) -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <!-- Stripe Java SDK -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>31.2.0</version>
+        </dependency>
+
+
 
     </dependencies>
 

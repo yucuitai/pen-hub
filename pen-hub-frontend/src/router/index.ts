@@ -23,9 +23,39 @@ const router = createRouter({
       component: UserRegisterPage,
     },
     {
+      path: '/user/profile',
+      name: '个人中心',
+      component: () => import('@/pages/user/UserProfilePage.vue'),
+    },
+    {
       path: '/admin/userManage',
       name: '用户管理',
       component: () => import('@/pages/admin/UserManagePage.vue'),
+    },
+    {
+      path: '/admin/statistics',
+      name: '数据分析',
+      component: () => import('@/pages/admin/StatisticsPage.vue'),
+    },
+    {
+      path: '/vip',
+      name: '会员兑换',
+      component: () => import('@/pages/VipPage.vue'),
+    },
+    {
+      path: '/create',
+      name: '文章创作',
+      component: () => import('@/pages/article/ArticleCreatePage.vue'),
+    },
+    {
+      path: '/article/list',
+      name: '文章列表',
+      component: () => import('@/pages/article/ArticleListPage.vue'),
+    },
+    {
+      path: '/article/:taskId',
+      name: '文章详情',
+      component: () => import('@/pages/article/ArticleDetailPage.vue'),
     },
   ],
 })

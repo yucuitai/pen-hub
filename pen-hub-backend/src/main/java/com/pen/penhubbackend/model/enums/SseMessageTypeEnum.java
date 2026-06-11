@@ -4,6 +4,7 @@ import lombok.Getter;
 
 /**
  * SSE 消息类型枚举
+ * 前后端都遵循的消息格式
  *
  */
 @Getter

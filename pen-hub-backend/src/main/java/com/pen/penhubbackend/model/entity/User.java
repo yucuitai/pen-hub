@@ -28,7 +28,7 @@ public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * id（使用雪花算法生成）
+     * id
      */
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private Long id;
@@ -49,7 +49,7 @@ public class User implements Serializable {
     private String userNickname;
 
     /**
-     * 用户头像URL
+     * 用户头像
      */
     private String userAvatar;
 
@@ -62,6 +62,21 @@ public class User implements Serializable {
      * 用户角色：user/admin
      */
     private String userRole;
+
+    /**
+     * 剩余配额
+     */
+    private Integer quota;
+
+    /**
+     * 成为会员时间
+     */
+    private LocalDateTime vipTime;
+
+    /**
+     * 会员类型：VIP_PERMANENT/VIP_MONTHLY/VIP_YEARLY
+     */
+    private String vipType;
 
     /**
      * 编辑时间
@@ -79,8 +94,9 @@ public class User implements Serializable {
     private LocalDateTime updateTime;
 
     /**
-     * 逻辑删除
+     * 是否删除
      */
-    @Column(isLogicDelete = true)
+    @Column(value = "is_delete", isLogicDelete = true)
     private Integer isDelete;
+
 }

@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+// 此文件未使用，路由使用的是 HomePage.vue
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <div></div>
 </template>

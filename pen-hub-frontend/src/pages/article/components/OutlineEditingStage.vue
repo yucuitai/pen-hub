@@ -199,7 +199,9 @@ onMounted(() => {
           const { oldIndex, newIndex } = evt
           if (oldIndex !== undefined && newIndex !== undefined) {
             const item = outlineSections.value.splice(oldIndex, 1)[0]
-            outlineSections.value.splice(newIndex, 0, item)
+            if (item) {
+              outlineSections.value.splice(newIndex, 0, item)
+            }
             // 更新 section 序号
             outlineSections.value.forEach((sec, idx) => {
               sec.section = idx + 1
@@ -229,12 +231,12 @@ const deleteSection = (index: number) => {
 }
 
 const addPoint = (sectionIndex: number) => {
-  outlineSections.value[sectionIndex].points.push('')
+  outlineSections.value[sectionIndex]?.points?.push('')
 }
 
 const deletePoint = (sectionIndex: number, pointIndex: number) => {
   const section = outlineSections.value[sectionIndex]
-  if (section.points.length > 1) {
+  if (section?.points && section.points.length > 1) {
     section.points.splice(pointIndex, 1)
   }
 }

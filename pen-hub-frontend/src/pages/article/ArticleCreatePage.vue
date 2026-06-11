@@ -82,12 +82,14 @@
                 </div>
                 <a-checkbox-group v-model:value="selectedImageMethods" class="methods-group">
                   <a-checkbox value="PEXELS">Pexels</a-checkbox>
+                  <!-- Nano Banana 暂时隐藏，待后续启用
                   <a-tooltip :title="isVip ? '' : '仅限 VIP 会员'">
                     <a-checkbox value="NANO_BANANA" :disabled="!isVip">
                       Nano Banana
                       <CrownOutlined v-if="!isVip" class="vip-icon" />
                     </a-checkbox>
                   </a-tooltip>
+                  -->
                   <a-checkbox value="MERMAID">Mermaid</a-checkbox>
                   <a-checkbox value="ICONIFY">Iconify</a-checkbox>
                   <a-checkbox value="EMOJI_PACK">表情包</a-checkbox>
@@ -235,6 +237,12 @@
           <div v-if="currentStep === 0 && !article.mainTitle" class="loading-placeholder">
             <a-spin size="large" />
             <p>AI 正在构思标题...</p>
+          </div>
+
+          <!-- 分析配图加载占位 -->
+          <div v-if="currentStep === 3 && !article.images?.length" class="loading-placeholder">
+            <a-spin size="large" />
+            <p>AI 正在智能分析配图需求...</p>
           </div>
           </div>
 
@@ -559,7 +567,7 @@ import {
   CrownOutlined,
   FileTextOutlined
 } from '@ant-design/icons-vue'
-import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
+import { createArticle, startArticle, confirmTitle, confirmOutline } from '@/api/articleController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { isAdmin as checkIsAdmin, isVip as checkIsVip, hasQuota as checkHasQuota } from '@/utils/permission'
 import { marked } from 'marked'
@@ -730,7 +738,7 @@ const startCreate = async () => {
   addLog('开始创建文章任务...', 'info')
 
   try {
-    // 创建任务
+    // 1. 创建任务
     const res = await createArticle({
       topic: topic.value,
       style: selectedStyle.value || undefined,
@@ -746,13 +754,20 @@ const startCreate = async () => {
     // 刷新用户信息（更新配额）
     await loginUserStore.fetchLoginUser()
 
-    // 建立 SSE 连接
-    addLog('已建立实时连接，开始生成...', 'info')
+    // 2. 先建立 SSE 连接
+    addLog('正在建立实时连接...', 'info')
     eventSource = connectSSE(taskId.value, {
       onMessage: handleSSEMessage,
       onError: handleSSEError,
       onComplete: handleSSEComplete,
     })
+
+    // 3. 等待一小段时间确保 SSE 连接建立
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // 4. 启动异步任务
+    addLog('连接已建立，开始生成...', 'info')
+    await startArticle(taskId.value)
   } catch (error) {
     const err = error as Error
     message.error(err.message || '创建任务失败')
@@ -836,6 +851,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
       isStreaming.value = false
       currentStep.value = 3
       addLog('正文生成完成', 'success')
+      addLog('正在智能分析配图需求...', 'info')
       break
 
     case 'AGENT4_COMPLETE':

@@ -66,8 +66,8 @@ public enum ImageMethodEnum {
 
     /**
      * 是否为 AI 生图方式
-     * true: 使用 prompt 生成图片（如 DALL-E、Midjourney、Nano Banana）
-     * false: 使用 keywords 检索图片（如 Pexels、Unsplash）
+     * true: 使用 prompt 参数生成图片（如 DALL-E、Midjourney、Nano Banana）
+     * false: 使用 keywords 参数检索图片（如 Pexels、Unsplash）
      */
     private final boolean aiGenerated;
 

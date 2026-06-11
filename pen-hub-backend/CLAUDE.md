@@ -182,3 +182,12 @@ throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
 - 图片存储策略完善（FTP 为主，COS 为备）
 - 图片访问 URL 统一处理
 - FTP 上传的异常处理和重试机制
+
+## v2.0 优化规划
+
+基于 v1.0 AI 核心创作流程，后续优化方向：
+
+1. **智能体重试机制** - 大模型返回不合法 JSON 时自动重试，提高流程成功率
+2. **Reviewer Agent** - 正文生成后、配图前加入审核智能体，评估内容质量并自动优化重写
+3. **Prompt 优化** - 持续调试改进，提高 AI 生成内容质量
+4. **添加ECharts图表生成** - 支持数据可视化

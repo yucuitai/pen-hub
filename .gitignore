@@ -1,4 +1,5 @@
 # === 通用 ===
+.playwright-mcp/
 *.log
 *.tmp
 *.swp
@@ -25,8 +26,9 @@ pen-hub-backend/*.war
 pen-hub-backend/.mvn/
 pen-hub-backend/mvnw
 pen-hub-backend/mvnw.cmd
-pen-hub-backend/application-local.yml
-pen-hub-backend/application-local.properties
+pen-hub-backend/**/application-local.yml
+pen-hub-backend/**/application-local.properties
+pen-hub-backend/**/application-prod.yml
 
 # === 前端 (Vue/Node) ===
 pen-hub-frontend/node_modules/

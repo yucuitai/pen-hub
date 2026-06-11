@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(value = "article", camelToUnderline = false)
+@Table(value = "article")
 public class Article implements Serializable {
 
     @Serial// 标识该类中与序列化（Serialization）相关的成员，帮助编译器进行静态检查。
@@ -45,6 +45,21 @@ public class Article implements Serializable {
     private String topic;
 
     /**
+     * 用户补充描述
+     */
+    private String userDescription;
+
+    /**
+     * 允许的配图方式列表（JSON格式）
+     */
+    private String enabledImageMethods;
+
+    /**
+     * 文章风格：tech/emotional/educational/humorous，可为空
+     */
+    private String style;
+
+    /**
      * 主标题
      */
     private String mainTitle;
@@ -53,6 +68,11 @@ public class Article implements Serializable {
      * 副标题
      */
     private String subTitle;
+
+    /**
+     * 标题方案列表（JSON格式）
+     */
+    private String titleOptions;
 
     /**
      * 大纲（JSON格式）
@@ -75,7 +95,7 @@ public class Article implements Serializable {
     private String coverImage;
 
     /**
-     * 配图列表（JSON数组）
+     * 配图列表（JSON数组，包含封面图 position=1）
      */
     private String images;
 
@@ -83,6 +103,11 @@ public class Article implements Serializable {
      * 状态：PENDING/PROCESSING/COMPLETED/FAILED
      */
     private String status;
+
+    /**
+     * 当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING
+     */
+    private String phase;
 
     /**
      * 错误信息
@@ -107,7 +132,7 @@ public class Article implements Serializable {
     /**
      * 是否删除
      */
-    @Column(isLogicDelete = true)
+    @Column(value = "is_delete", isLogicDelete = true)
     private Integer isDelete;
 }
 

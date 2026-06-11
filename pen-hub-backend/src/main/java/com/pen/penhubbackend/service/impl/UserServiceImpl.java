@@ -5,10 +5,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.pen.penhubbackend.constant.UserConstant;
 import com.pen.penhubbackend.exception.BusinessException;
 import com.pen.penhubbackend.exception.ErrorCode;
 import com.pen.penhubbackend.mapper.UserMapper;
 import com.pen.penhubbackend.model.dto.user.UserQueryRequest;
+import com.pen.penhubbackend.model.dto.user.UserUpdateProfileRequest;
+import com.pen.penhubbackend.model.dto.user.UserChangePasswordRequest;
 import com.pen.penhubbackend.model.entity.User;
 import com.pen.penhubbackend.model.enums.UserRoleEnum;
 import com.pen.penhubbackend.model.vo.LoginUserVO;
@@ -81,6 +84,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 这里给一个随机中文词组当用户昵称
         user.setUserNickname("默认用户");
         user.setUserRole(UserRoleEnum.USER.getValue());
+        user.setQuota(UserConstant.DEFAULT_QUOTA);
 
 
         boolean result = this.save(user);
@@ -152,7 +156,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        return currentUser;
+        return user;
     }
 
     /**
@@ -275,5 +279,74 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         return queryWrapper;
+    }
+
+    /**
+     * 用户更新个人信息（昵称、头像、简介）
+     */
+    @Override
+    public LoginUserVO updateMyProfile(UserUpdateProfileRequest request, HttpServletRequest httpRequest) {
+        // 获取当前登录用户
+        User loginUser = getLoginUser(httpRequest);
+
+        // 更新允许修改的字段
+        if (StrUtil.isNotBlank(request.getUserNickname())) {
+            loginUser.setUserNickname(request.getUserNickname());
+        }
+        if (request.getUserAvatar() != null) {
+            loginUser.setUserAvatar(request.getUserAvatar());
+        }
+        if (request.getUserProfile() != null) {
+            loginUser.setUserProfile(request.getUserProfile());
+        }
+
+        boolean result = this.updateById(loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新失败");
+        }
+
+        // 更新 session 中的用户信息
+        httpRequest.getSession().setAttribute(USER_LOGIN_STATE, loginUser);
+
+        return getLoginUserVO(loginUser);
+    }
+
+    /**
+     * 用户修改密码
+     */
+    @Override
+    public boolean changePassword(UserChangePasswordRequest request, HttpServletRequest httpRequest) {
+        String oldPassword = request.getOldPassword();
+        String newPassword = request.getNewPassword();
+        String checkNewPassword = request.getCheckNewPassword();
+
+        // 校验参数
+        if (StrUtil.hasBlank(oldPassword, newPassword, checkNewPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (newPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度至少8位");
+        }
+        if (!newPassword.equals(checkNewPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+
+        // 获取当前登录用户
+        User loginUser = getLoginUser(httpRequest);
+
+        // 验证旧密码
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        if (!encryptOldPassword.equals(loginUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码错误");
+        }
+
+        // 加密新密码并更新
+        loginUser.setUserPassword(getEncryptPassword(newPassword));
+        boolean result = this.updateById(loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "修改密码失败");
+        }
+
+        return true;
     }
 }

@@ -4,9 +4,13 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import com.pen.penhubbackend.annotation.AgentExecution;
 import com.pen.penhubbackend.constant.PromptConstant;
 import com.pen.penhubbackend.model.dto.article.ArticleState;
+import com.pen.penhubbackend.model.dto.image.ImageData;
 import com.pen.penhubbackend.model.dto.image.ImageRequest;
+import com.pen.penhubbackend.model.entity.User;
+import com.pen.penhubbackend.model.enums.ArticleStyleEnum;
 import com.pen.penhubbackend.model.enums.ImageMethodEnum;
 import com.pen.penhubbackend.model.enums.SseMessageTypeEnum;
 import com.pen.penhubbackend.utils.JacksonUtils;
@@ -267,53 +271,14 @@ public class ArticleAgentService {
         state.setImages(imageResults);
         log.info("智能体5：所有配图生成并上传完成, count={}", imageResults.size());
     }
-    /**
-     * 智能体5：生成配图（串行执行）
-     */
-    @Resource
-    private ImageSearchService imageSearchService;
-    @Resource
-    private CosService cosService;
-    private void agent5GenerateImages(ArticleState state, Consumer<String> streamHandler) {
-        List<ArticleState.ImageResult> imageResults = new ArrayList<>();
-
-        for (ArticleState.ImageRequirement requirement : state.getImageRequirements()) {
-            log.info("智能体5：开始检索配图, position={}, keywords={}",
-                    requirement.getPosition(), requirement.getKeywords());
-
-            // 调用图片检索服务
-            String imageUrl = imageSearchService.searchImage(requirement.getKeywords());
-
-            // 降级策略
-            ImageMethodEnum method = imageSearchService.getMethod();
-            if (imageUrl == null) {
-                imageUrl = imageSearchService.getFallbackImage(requirement.getPosition());
-                method = ImageMethodEnum.PICSUM;
-                log.warn("智能体5：图片检索失败, 使用降级方案, position={}", requirement.getPosition());
-            }
-
-            // 使用图片直接 URL（MVP 阶段不上传到 COS，简化流程）
-            String finalImageUrl = cosService.useDirectUrl(imageUrl);
-
-            // 创建配图结果
-            ArticleState.ImageResult imageResult = buildImageResult(requirement, finalImageUrl, method);
-            imageResults.add(imageResult);
-
-            // 推送单张配图完成
-            String imageCompleteMessage = SseMessageTypeEnum.IMAGE_COMPLETE.getStreamingPrefix() + GsonUtils.toJson(imageResult);
-            streamHandler.accept(imageCompleteMessage);
-
-            log.info("智能体5：配图检索成功, position={}, method={}",
-                    requirement.getPosition(), method.getValue());
-        }
-
-        state.setImages(imageResults);
-        log.info("智能体5：所有配图生成完成, count={}", imageResults.size());
-    }
 
 
     /**
      * 图文合成：根据占位符将配图插入正文
+     * 实现思路：
+     * 逐行扫描正文,遇到##开头的章节标题时,就检查配图列表中是否有与该标题匹配的图片,有的话就在标题
+     * 后面插入一张Markdown格式的图片。封面图不插入正文,而是通过独立的 coverImage 字段单独存储,这样前
+     * 端可以在列表卡片、文章顶部等不同位置灵活使用:
      */
     @AgentExecution(value = "agent6_merge_content", description = "图文合成")
     public void mergeImagesIntoContent(ArticleState state) {
@@ -329,8 +294,9 @@ public class ArticleAgentService {
 
         // 遍历所有配图，根据占位符替换为实际图片
         for (ArticleState.ImageResult image : images) {
-            String placeholder = image.getPlaceholderId();
+            String placeholder = image.getPlaceholderId();//占位符ID
             if (placeholder != null && !placeholder.isEmpty()) {
+                //构建 Markdown 图片语法 格式：![图片描述](图片URL)
                 String imageMarkdown = "![" + image.getDescription() + "](" + image.getUrl() + ")";
                 fullContent = fullContent.replace(placeholder, imageMarkdown);
             }
@@ -527,7 +493,7 @@ public class ArticleAgentService {
             List<ArticleState.ImageRequirement> requirements,
             List<String> enabledMethods) {
 
-        // 如果没有限制，返回所有需求
+        // 如果没有限制（为空表示支持所有方式），返回所有需求
         if (enabledMethods == null || enabledMethods.isEmpty()) {
             return requirements;
         }
@@ -596,7 +562,7 @@ public class ArticleAgentService {
     public List<ArticleState.OutlineSection> aiModifyOutline(String mainTitle, String subTitle,
                                                              List<ArticleState.OutlineSection> currentOutline,
                                                              String modifySuggestion) {
-        String currentOutlineJson = GsonUtils.toJson(currentOutline);
+        String currentOutlineJson = JacksonUtils.toJson(currentOutline);
 
         String prompt = PromptConstant.AI_MODIFY_OUTLINE_PROMPT
                 .replace("{mainTitle}", mainTitle)
@@ -617,6 +583,7 @@ public class ArticleAgentService {
      */
     private ArticleAgentService getProxy() {
         try {
+            // 获取代理对象
             return (ArticleAgentService) AopContext.currentProxy();
         } catch (IllegalStateException e) {
             // 如果获取代理失败，返回 this（降级处理）

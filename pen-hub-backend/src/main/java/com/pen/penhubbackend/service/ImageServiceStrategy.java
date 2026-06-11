@@ -1,5 +1,8 @@
 package com.pen.penhubbackend.service;
 
+import com.pen.penhubbackend.model.dto.image.ImageData;
+import com.pen.penhubbackend.model.dto.image.ImageRequest;
+import com.pen.penhubbackend.model.enums.ImageMethodEnum;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 策略模式：
  * 图片服务策略选择器
  * 根据图片来源类型选择对应的图片服务实现
  *
@@ -19,7 +23,6 @@ import java.util.Map;
  * - 支持服务可用性检查和自动降级
  * - 统一处理图片上传到 COS
  *
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Service
 @Slf4j
@@ -32,10 +35,15 @@ public class ImageServiceStrategy {
     private CosService cosService;
 
     /**
-     * 图片服务映射：ImageMethodEnum -> ImageSearchService
+     * 图片服务映射 ，配图方式类型 -》 对应图片服务：ImageMethodEnum -> ImageSearchService
      */
     private final Map<ImageMethodEnum, ImageSearchService> serviceMap = new EnumMap<>(ImageMethodEnum.class);
 
+    /**
+     * 初始化图片服务映射
+     * 在 Spring Bean 初始化完成后立即执行一次
+     * 用于初始化配置、注册映射、加载缓存
+     */
     @PostConstruct
     public void init() {
         // 将所有 ImageSearchService 实现注册到映射表
@@ -51,7 +59,7 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 获取图片并上传到 COS（推荐方法）
+     * 获取图片并上传到 COS（推荐方法）,已修改为临时上传应用服务器
      * 统一处理所有图片来源的上传逻辑
      *
      * @param imageSource 图片来源
@@ -59,7 +67,9 @@ public class ImageServiceStrategy {
      * @return 图片获取结果（包含 COS URL）
      */
     public ImageResult getImageAndUpload(String imageSource, ImageRequest request) {
+        // 1.解析图片来源
         ImageMethodEnum method = resolveMethod(imageSource);
+        // 2.获取图片服务
         ImageSearchService service = serviceMap.get(method);
 
         if (service == null || !service.isAvailable()) {
@@ -68,7 +78,7 @@ public class ImageServiceStrategy {
         }
 
         try {
-            // 1. 获取图片数据
+            // 3. 调用服务获取图片获取图片数据
             ImageData imageData = service.getImageData(request);
 
             if (imageData == null || !imageData.isValid()) {
@@ -76,14 +86,18 @@ public class ImageServiceStrategy {
                 return handleFallbackWithUpload(request.getPosition());
             }
 
-            // 2. 上传到 COS
+            // 4. 统一上传 COS/FTP
+            // 上传到 COS
             String folder = getFolderForMethod(method);
-            String cosUrl = cosService.uploadImageData(imageData, folder);
+//            String cosUrl = cosService.uploadImageData(imageData, folder);
+            // 临时上传应用服务器
+            String cosUrl  = cosService.uploadImageDataToFtp(imageData, folder);
 
             if (cosUrl != null && !cosUrl.isEmpty()) {
                 log.info("图片获取并上传成功, method={}, cosUrl={}", method, cosUrl);
                 return new ImageResult(cosUrl, method);
             } else {
+                // 5. 失败降级
                 log.warn("图片上传 COS 失败, 使用降级方案, method={}", method);
                 return handleFallbackWithUpload(request.getPosition());
             }
@@ -184,7 +198,9 @@ public class ImageServiceStrategy {
 
         // 将降级图片也上传到 COS
         ImageData fallbackData = ImageData.fromUrl(fallbackUrl);
-        String cosUrl = cosService.uploadImageData(fallbackData, "fallback");
+        // 临时上传应用服务器
+        String cosUrl  = cosService.uploadImageDataToFtp(fallbackData, "fallback");
+//        String cosUrl = cosService.uploadImageData(fallbackData, "fallback");
 
         // 如果上传失败，直接使用原始 URL
         String finalUrl = (cosUrl != null && !cosUrl.isEmpty()) ? cosUrl : fallbackUrl;

@@ -5,6 +5,8 @@ import com.mybatisflex.core.service.IService;
 import com.pen.penhubbackend.model.dto.user.UserLoginRequest;
 import com.pen.penhubbackend.model.dto.user.UserQueryRequest;
 import com.pen.penhubbackend.model.dto.user.UserRegisterRequest;
+import com.pen.penhubbackend.model.dto.user.UserUpdateProfileRequest;
+import com.pen.penhubbackend.model.dto.user.UserChangePasswordRequest;
 import com.pen.penhubbackend.model.entity.User;
 import com.pen.penhubbackend.model.vo.LoginUserVO;
 import com.pen.penhubbackend.model.vo.UserVO;
@@ -93,6 +95,16 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 用户更新个人信息（昵称、头像、简介）
+     */
+    LoginUserVO updateMyProfile(UserUpdateProfileRequest request, HttpServletRequest httpRequest);
+
+    /**
+     * 用户修改密码
+     */
+    boolean changePassword(UserChangePasswordRequest request, HttpServletRequest httpRequest);
 
 }
 

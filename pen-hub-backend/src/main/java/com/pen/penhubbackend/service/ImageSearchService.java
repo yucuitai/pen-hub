@@ -6,6 +6,7 @@ import com.pen.penhubbackend.model.dto.image.ImageRequest;
 import com.pen.penhubbackend.model.enums.ImageMethodEnum;
 
 /**
+ * 模板方法：
  * 图片服务接口
  * 抽象图片获取逻辑，便于扩展多种图片来源（如 Pexels、Unsplash、AI 生图等）
  * 

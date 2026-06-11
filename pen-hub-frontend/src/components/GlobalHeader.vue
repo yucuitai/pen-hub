@@ -5,15 +5,19 @@
         <RouterLink to="/" class="logo-link">
           <div class="logo-wrapper">
             <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
-            <h1 class="site-title">AI文章创作器</h1>
+            <h1 class="site-title">笔枢</h1>
           </div>
         </RouterLink>
       </div>
 
       <!-- 中间：导航菜单 -->
       <nav class="nav-center">
-        <RouterLink v-for="item in menuItems" :key="item.key" :to="item.key"
-          :class="['nav-item', { active: selectedKeys.includes(item.key) }]">
+        <RouterLink
+          v-for="item in visibleMenuItems"
+          :key="item.key"
+          :to="item.key"
+          :class="['nav-item', { active: selectedKeys.includes(item.key) }]"
+        >
           <component :is="item.icon" class="nav-icon" />
           <span>{{ item.label }}</span>
         </RouterLink>
@@ -21,24 +25,72 @@
 
       <!-- 右侧：用户操作区域 -->
       <div class="header-right">
-        <RouterLink to="/user/login" class="login-btn">登录</RouterLink>
+        <!-- 已登录：显示用户信息 -->
+        <div v-if="isLoggedIn" class="user-section">
+          <a-dropdown>
+            <div class="user-info">
+              <a-avatar :size="32" :src="loginUser.userAvatar" class="user-avatar">
+                {{ loginUser.userNickname?.charAt(0) || 'U' }}
+              </a-avatar>
+              <span class="user-name">{{ loginUser.userNickname || '用户' }}</span>
+              <span v-if="isAdminUser && loginUser.userNickname !== '管理员'" class="role-badge admin">管理员</span>
+              <span v-else-if="isVipUser && !isAdminUser && loginUser.userNickname !== 'VIP'" class="role-badge vip">VIP</span>
+            </div>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item key="profile" @click="goToProfile">
+                  <UserOutlined />
+                  个人中心
+                </a-menu-item>
+                <a-menu-item key="articles" @click="goToArticles">
+                  <FileTextOutlined />
+                  我的文章
+                </a-menu-item>
+                <a-menu-divider />
+                <a-menu-item key="logout" @click="handleLogout">
+                  <LogoutOutlined />
+                  退出登录
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+
+        <!-- 未登录：显示登录按钮 -->
+        <RouterLink v-else to="/user/login" class="login-btn">登录</RouterLink>
       </div>
     </div>
   </a-layout-header>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import {
   HomeOutlined,
   EditOutlined,
   UnorderedListOutlined,
   SettingOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  CrownOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons-vue'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { userLogout } from '@/api/yonghuguanli'
+import { isAdmin, isVip } from '@/utils/permission'
 
 const router = useRouter()
+const loginUserStore = useLoginUserStore()
+
+// 用户状态
+const loginUser = computed(() => loginUserStore.loginUser)
+const isLoggedIn = computed(() => !!loginUser.value.id)
+const isAdminUser = computed(() => isAdmin(loginUser.value))
+const isVipUser = computed(() => isVip(loginUser.value))
+
 // 当前选中菜单
 const selectedKeys = ref<string[]>(['/'])
 // 监听路由变化，更新当前选中菜单
@@ -52,28 +104,80 @@ const menuItems = [
     key: '/',
     icon: HomeOutlined,
     label: '首页',
+    show: true,
   },
   {
     key: '/create',
     icon: EditOutlined,
     label: '创作',
+    show: true,
   },
   {
     key: '/article/list',
     icon: UnorderedListOutlined,
     label: '历史',
+    show: true,
+  },
+  {
+    key: '/vip',
+    icon: CrownOutlined,
+    label: '会员',
+    show: true,
   },
   {
     key: '/admin/userManage',
     icon: SettingOutlined,
     label: '管理',
+    show: computed(() => isAdminUser.value),
   },
   {
     key: '/admin/statistics',
     icon: BarChartOutlined,
     label: '数据',
+    show: computed(() => isAdminUser.value),
   },
 ]
+
+// 过滤可见菜单项
+const visibleMenuItems = computed(() => {
+  return menuItems.filter((item) => {
+    if (typeof item.show === 'object' && 'value' in item.show) {
+      return item.show.value
+    }
+    return item.show
+  })
+})
+
+// 跳转到个人中心
+const goToProfile = () => {
+  router.push('/user/profile')
+}
+
+// 跳转到我的文章
+const goToArticles = () => {
+  router.push('/article/list')
+}
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await userLogout()
+    // 清除用户信息
+    loginUserStore.setLoginUser({
+      id: undefined,
+      userAccount: undefined,
+      userNickname: undefined,
+      userAvatar: undefined,
+      userProfile: undefined,
+      userRole: undefined,
+    })
+    message.success('已退出登录')
+    router.push('/')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+    message.error('退出登录失败')
+  }
+}
 </script>
 
 <style scoped>
@@ -178,6 +282,60 @@ const menuItems = [
   gap: 16px;
 }
 
+/* 用户信息区域 */
+.user-section {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.user-info:hover {
+  background: var(--color-background-secondary);
+}
+
+.user-avatar {
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 600;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  color: white;
+}
+
+.role-badge.vip {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+/* 登录按钮 */
 .login-btn {
   display: inline-flex;
   align-items: center;
@@ -216,6 +374,14 @@ const menuItems = [
 
   .nav-item {
     padding: 8px 12px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .role-badge {
+    display: none;
   }
 }
 </style>

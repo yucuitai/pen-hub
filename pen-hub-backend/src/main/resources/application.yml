@@ -53,21 +53,14 @@ logging:
     org.springframework.jdbc.support.JdbcTransactionManager: debug
     com.pen.penhubbackend.mapper: debug
 
-# Pexels API 配置
-
-# Nano Banana (Gemini 原生图片生成) 配置
-nano-banana:
-
-# Mermaid 图表生成配置
-
-
-# Iconify 图标库配置
-
-
-# 表情包图片检索配置
-
-# SVG 概念示意图生成配置
-
-
 # 文章智能体配置
+article:
+  agent:
+    orchestrator:
+      # 是否启用多智能体编排模式（支持配图并行生成）
+      # true: 使用 Spring AI Alibaba 多智能体编排
+      # false: 使用原有的 ArticleAgentService
+      enabled: true
+    # Agent 最大迭代次数
+    max-iterations: 10
 

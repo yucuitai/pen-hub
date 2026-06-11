@@ -8,7 +8,7 @@
           <div class="brand-logo">
             <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
           </div>
-          <h1 class="brand-title">AI 爆款文章创作器</h1>
+          <h1 class="brand-title">笔枢</h1>
           <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
           <div class="brand-features">
             <div class="feature-item">
@@ -26,52 +26,40 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 右侧表单区域 -->
       <div class="form-section">
         <div class="form-card">
           <h2 class="form-title">欢迎回来</h2>
           <p class="form-subtitle">登录您的账号继续创作</p>
-          
+
           <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit" class="login-form">
             <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
-              <a-input 
-                v-model:value="formState.userAccount" 
-                placeholder="请输入账号" 
-                size="large"
-                class="form-input"
-              >
+              <a-input v-model:value="formState.userAccount" placeholder="请输入账号" size="large" class="form-input">
                 <template #prefix>
                   <UserOutlined class="input-icon" />
                 </template>
               </a-input>
             </a-form-item>
-            <a-form-item
-              name="userPassword"
-              :rules="[
-                { required: true, message: '请输入密码' },
-                { min: 8, message: '密码长度不能小于 8 位' },
-              ]"
-            >
-              <a-input-password 
-                v-model:value="formState.userPassword" 
-                placeholder="请输入密码" 
-                size="large"
-                class="form-input"
-              >
+            <a-form-item name="userPassword" :rules="[
+              { required: true, message: '请输入密码' },
+              { min: 8, message: '密码长度不能小于 8 位' },
+            ]">
+              <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码" size="large"
+                class="form-input">
                 <template #prefix>
                   <LockOutlined class="input-icon" />
                 </template>
               </a-input-password>
             </a-form-item>
-            
+
             <a-form-item>
               <a-button type="primary" html-type="submit" size="large" block class="submit-btn">
                 登录
               </a-button>
             </a-form-item>
           </a-form>
-          
+
           <div class="form-footer">
             <span class="footer-text">还没有账号？</span>
             <RouterLink to="/user/register" class="register-link">立即注册</RouterLink>
@@ -84,7 +72,7 @@
 
 <script lang="ts" setup>
 import { reactive } from 'vue'
-import { userLogin } from '@/api/userController.ts'
+import { userLogin } from '@/api/yonghuguanli'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
@@ -102,16 +90,14 @@ const loginUserStore = useLoginUserStore()
  * 提交表单
  * @param values
  */
-const handleSubmit = async (values: any) => {
+const handleSubmit = async (values: API.UserLoginRequest) => {
   const res = await userLogin(values)
   // 登录成功，把登录态保存到全局状态中
   if (res.data.code === 0 && res.data.data) {
-    await loginUserStore.fetchLoginUser()
+    loginUserStore.setLoginUser(res.data.data)
     message.success('登录成功')
-    router.push({
-      path: '/',
-      replace: true,
-    })
+    const redirect = router.currentRoute.value.query.redirect as string
+    router.push({ path: redirect || '/', replace: true })
   } else {
     message.error('登录失败，' + res.data.message)
   }
@@ -166,13 +152,22 @@ const handleSubmit = async (values: any) => {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
   animation: pulse-bg 8s ease-in-out infinite;
 }
 
 @keyframes pulse-bg {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
 }
 
 .brand-content {
@@ -344,19 +339,19 @@ const handleSubmit = async (values: any) => {
     min-height: auto;
     border-radius: var(--radius-xl);
   }
-  
+
   .brand-section {
     padding: 32px 24px;
   }
-  
+
   .brand-title {
     font-size: 22px;
   }
-  
+
   .brand-features {
     display: none;
   }
-  
+
   .form-section {
     padding: 32px 24px;
   }

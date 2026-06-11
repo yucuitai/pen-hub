@@ -176,6 +176,30 @@ public class UserController {
     }
 
     /**
+     * 用户更新个人信息
+     */
+    @Operation(summary = "更新个人信息", description = "用户更新昵称、头像、简介")
+    @PostMapping("/update/profile")
+    public BaseResponse<LoginUserVO> updateMyProfile(@RequestBody UserUpdateProfileRequest request,
+                                                      HttpServletRequest httpRequest) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        LoginUserVO loginUserVO = userService.updateMyProfile(request, httpRequest);
+        return ResultUtils.success(loginUserVO);
+    }
+
+    /**
+     * 用户修改密码
+     */
+    @Operation(summary = "修改密码", description = "用户修改登录密码")
+    @PostMapping("/change-password")
+    public BaseResponse<Boolean> changePassword(@RequestBody UserChangePasswordRequest request,
+                                                HttpServletRequest httpRequest) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        boolean result = userService.changePassword(request, httpRequest);
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 根据 id 获取包装类
      * @param id
      * @return

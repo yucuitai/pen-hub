@@ -13,51 +13,52 @@
 
       <!-- 主内容区：左右布局 -->
       <div class="main-section">
-        <!-- 左侧：价格卡片 -->
-        <div class="pricing-card">
-          <div class="pricing-badge">限时优惠</div>
-          <div class="pricing-header">
+        <!-- 左侧：兑换码卡片 -->
+        <div class="redeem-card">
+          <div class="redeem-badge">兑换会员</div>
+          <div class="redeem-header">
             <div class="plan-icon">
               <CrownOutlined />
             </div>
             <h2 class="plan-name">永久会员</h2>
-            <div class="price-display">
-              <span class="currency">$</span>
-              <span class="price">199</span>
-              <span class="period">/永久</span>
-            </div>
-            <div class="original-price">
-              <span class="original-label">原价</span>
-              <span class="original-value">$299</span>
-            </div>
+            <p class="redeem-desc">输入兑换码，立即升级为永久会员</p>
           </div>
 
-          <div class="pricing-divider"></div>
+          <div class="redeem-divider"></div>
 
-          <div class="pricing-features">
-            <div v-for="(item, index) in pricingFeatures" :key="index" class="pricing-feature">
+          <div class="redeem-features">
+            <div v-for="(item, index) in redeemFeatures" :key="index" class="redeem-feature">
               <CheckCircleOutlined class="feature-check" />
               <span>{{ item }}</span>
             </div>
           </div>
 
-          <a-button
-            type="primary"
-            size="large"
-            :loading="purchasing"
-            :disabled="isVip"
-            @click="handlePurchase"
-            class="purchase-btn"
-          >
-            <template #icon>
-              <ThunderboltOutlined />
-            </template>
-            {{ isVip ? '您已是永久会员' : '立即升级' }}
-          </a-button>
+          <div class="redeem-input-section">
+            <a-input
+              v-model:value="redeemCode"
+              placeholder="请输入兑换码"
+              size="large"
+              class="redeem-input"
+              :disabled="isVip"
+            />
+            <a-button
+              type="primary"
+              size="large"
+              :loading="redeeming"
+              :disabled="isVip || !redeemCode.trim()"
+              @click="handleRedeem"
+              class="redeem-btn"
+            >
+              <template #icon>
+                <ThunderboltOutlined />
+              </template>
+              {{ isVip ? '您已是永久会员' : '立即兑换' }}
+            </a-button>
+          </div>
 
-          <div class="security-notice">
+          <div class="redeem-notice">
             <SafetyOutlined />
-            <span>安全支付 · 7天无理由退款</span>
+            <span>兑换码请向管理员获取</span>
           </div>
         </div>
 
@@ -99,9 +100,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
   CrownOutlined,
@@ -116,16 +117,33 @@ import {
   QuestionCircleOutlined
 } from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { createVipPaymentSession } from '@/api/paymentController'
+import { redeemCode as redeemCodeApi } from '@/api/redemptionController'
 import { isVip as checkIsVip } from '@/utils/permission'
 
 const router = useRouter()
-const route = useRoute()
 const loginUserStore = useLoginUserStore()
-const purchasing = ref(false)
+const redeeming = ref(false)
+const redeemCodeValue = ref('')
 
 // 是否是 VIP（管理员也视为 VIP）
 const isVip = computed(() => checkIsVip(loginUserStore.loginUser))
+
+// 兑换码双向绑定
+const redeemCode = computed({
+  get: () => redeemCodeValue.value,
+  set: (val: string) => {
+    redeemCodeValue.value = val.toUpperCase()
+  }
+})
+
+// 兑换特性列表
+const redeemFeatures = [
+  '无限创作配额',
+  '全部高级配图功能',
+  'AI 大纲智能编辑',
+  '优先生成队列',
+  '终身有效'
+]
 
 // 会员特权列表
 const features = [
@@ -157,87 +175,59 @@ const features = [
   {
     icon: GiftOutlined,
     title: '终身有效',
-    desc: '一次购买，永久使用，无需续费'
+    desc: '一次兑换，永久使用，无需续费'
   }
-]
-
-// 价格卡片特性
-const pricingFeatures = [
-  '无限创作配额',
-  '全部高级配图功能',
-  'AI 大纲智能编辑',
-  '优先生成队列',
-  '终身有效'
 ]
 
 // FAQ 列表
 const faqs = [
   {
-    question: '支付后多久生效？',
-    answer: '支付成功后立即生效，您将立即获得永久会员权限，刷新页面即可看到变化。'
+    question: '兑换后多久生效？',
+    answer: '兑换成功后立即生效，您将立即获得永久会员权限，刷新页面即可看到变化。'
   },
   {
-    question: '如何申请退款？',
-    answer: '购买后 7 天内，如不满意可申请退款，退款后会员权限将被取消。'
+    question: '如何获取兑换码？',
+    answer: '请联系管理员获取兑换码，或关注我们的官方活动获取免费兑换码。'
   },
   {
     question: '会员是否需要续费？',
-    answer: '不需要。永久会员一次购买，终身有效，无需任何续费。'
+    answer: '不需要。永久会员一次兑换，终身有效，无需任何续费。'
   },
   {
-    question: '支付安全吗？',
-    answer: '我们使用 Stripe 国际支付平台，全程加密传输，安全可靠。'
+    question: '兑换码可以重复使用吗？',
+    answer: '每个兑换码只能使用一次，兑换后即失效。'
   }
 ]
 
-// 检查支付结果
-onMounted(async () => {
-  const success = route.query.success
-  const cancelled = route.query.cancelled
-
-  if (success === 'true') {
-    await loginUserStore.fetchLoginUser()
-    Modal.success({
-      title: '支付成功！',
-      content: '恭喜您成为永久会员，已解锁全部高级功能！',
-      okText: '开始创作',
-      onOk: () => {
-        router.push('/create')
-      }
-    })
-    router.replace('/vip')
-  } else if (cancelled === 'true') {
-    message.info('支付已取消')
-    router.replace('/vip')
-  }
-})
-
-// 购买处理
-const handlePurchase = async () => {
+// 兑换处理
+const handleRedeem = async () => {
   if (!loginUserStore.loginUser.id) {
     message.warning('请先登录')
     router.push('/user/login')
     return
   }
 
-  if (isVip.value) {
-    message.info('您已经是永久会员')
+  if (!redeemCodeValue.value.trim()) {
+    message.warning('请输入兑换码')
     return
   }
 
-  purchasing.value = true
+  redeeming.value = true
   try {
-    const res = await createVipPaymentSession()
+    const res = await redeemCodeApi({ code: redeemCodeValue.value.trim() })
     if (res.data.code === 0 && res.data.data) {
-      window.location.href = res.data.data
+      // 兑换成功，刷新用户信息
+      await loginUserStore.fetchLoginUser()
+      message.success('兑换成功！您已成为永久会员')
+      redeemCodeValue.value = ''
     } else {
-      message.error(res.data.message || '创建支付失败')
+      message.error(res.data.message || '兑换失败，请检查兑换码是否正确')
     }
   } catch (error) {
-    console.error('创建支付失败:', error)
-    message.error('创建支付失败，请稀后重试')
+    console.error('兑换失败:', error)
+    message.error('兑换失败，请检查兑换码是否正确')
   } finally {
-    purchasing.value = false
+    redeeming.value = false
   }
 }
 </script>
@@ -300,8 +290,8 @@ const handlePurchase = async () => {
   margin-bottom: 56px;
 }
 
-/* 价格卡片 */
-.pricing-card {
+/* 兑换码卡片 */
+.redeem-card {
   background: white;
   border-radius: var(--radius-xl);
   padding: 36px 32px;
@@ -313,7 +303,7 @@ const handlePurchase = async () => {
   top: 88px;
 }
 
-.pricing-badge {
+.redeem-badge {
   position: absolute;
   top: -12px;
   left: 50%;
@@ -327,7 +317,7 @@ const handlePurchase = async () => {
   box-shadow: var(--shadow-green);
 }
 
-.pricing-header {
+.redeem-header {
   text-align: center;
   padding-bottom: 20px;
 }
@@ -351,65 +341,27 @@ const handlePurchase = async () => {
 .plan-name {
   font-size: 20px;
   font-weight: 700;
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   color: var(--color-text);
 }
 
-.price-display {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  margin-bottom: 6px;
-}
-
-.currency {
-  font-size: 18px;
-  color: var(--color-text-secondary);
-  margin-right: 2px;
-  font-weight: 500;
-}
-
-.price {
-  font-size: 52px;
-  font-weight: 700;
-  color: var(--color-primary);
-  line-height: 1;
-}
-
-.period {
+.redeem-desc {
   font-size: 14px;
-  color: var(--color-text-muted);
-  margin-left: 4px;
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 
-.original-price {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.original-label {
-  color: var(--color-text-muted);
-}
-
-.original-value {
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-}
-
-.pricing-divider {
+.redeem-divider {
   height: 1px;
   background: var(--color-border-light);
   margin: 20px 0;
 }
 
-.pricing-features {
+.redeem-features {
   margin-bottom: 24px;
 }
 
-.pricing-feature {
+.redeem-feature {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -424,7 +376,26 @@ const handlePurchase = async () => {
   }
 }
 
-.purchase-btn {
+/* 兑换码输入区域 */
+.redeem-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.redeem-input {
+  font-size: 15px;
+  border-radius: var(--radius-md);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+}
+
+.redeem-btn {
   width: 100%;
   height: 48px;
   font-size: 15px;
@@ -446,7 +417,7 @@ const handlePurchase = async () => {
   }
 }
 
-.security-notice {
+.redeem-notice {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,7 +569,7 @@ const handlePurchase = async () => {
     grid-template-columns: 1fr;
   }
 
-  .pricing-card {
+  .redeem-card {
     position: static;
     max-width: 400px;
     margin: 0 auto;
@@ -626,12 +597,8 @@ const handlePurchase = async () => {
     font-size: 14px;
   }
 
-  .pricing-card {
+  .redeem-card {
     padding: 28px 24px;
-  }
-
-  .price {
-    font-size: 44px;
   }
 
   .features-section,

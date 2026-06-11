@@ -4,6 +4,7 @@ import lombok.Getter;
 
 /**
  * 文章阶段枚举
+ * 对应数据表字段phase
  *
  */
 @Getter

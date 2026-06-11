@@ -8,7 +8,7 @@
           <div class="brand-logo">
             <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
           </div>
-          <h1 class="brand-title">AI 爆款文章创作器</h1>
+          <h1 class="brand-title">笔枢</h1>
           <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
           <div class="brand-features">
             <div class="feature-item">
@@ -26,71 +26,52 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 右侧表单区域 -->
       <div class="form-section">
         <div class="form-card">
           <h2 class="form-title">创建账号</h2>
           <p class="form-subtitle">注册开启您的 AI 创作之旅</p>
-          
+
           <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit" class="register-form">
             <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
-              <a-input 
-                v-model:value="formState.userAccount" 
-                placeholder="请输入账号" 
-                size="large"
-                class="form-input"
-              >
+              <a-input v-model:value="formState.userAccount" placeholder="请输入账号" size="large" class="form-input">
                 <template #prefix>
                   <UserOutlined class="input-icon" />
                 </template>
               </a-input>
             </a-form-item>
-            <a-form-item
-              name="userPassword"
-              :rules="[
-                { required: true, message: '请输入密码' },
-                { min: 8, message: '密码不能小于 8 位' },
-              ]"
-            >
-              <a-input-password 
-                v-model:value="formState.userPassword" 
-                placeholder="请输入密码" 
-                size="large"
-                class="form-input"
-              >
+            <a-form-item name="userPassword" :rules="[
+              { required: true, message: '请输入密码' },
+              { min: 8, message: '密码不能小于 8 位' },
+            ]">
+              <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码" size="large"
+                class="form-input">
                 <template #prefix>
                   <LockOutlined class="input-icon" />
                 </template>
               </a-input-password>
             </a-form-item>
-            <a-form-item
-              name="checkPassword"
-              :rules="[
-                { required: true, message: '请确认密码' },
-                { min: 8, message: '密码不能小于 8 位' },
-                { validator: validateCheckPassword },
-              ]"
-            >
-              <a-input-password 
-                v-model:value="formState.checkPassword" 
-                placeholder="请确认密码" 
-                size="large"
-                class="form-input"
-              >
+            <a-form-item name="checkPassword" :rules="[
+              { required: true, message: '请确认密码' },
+              { min: 8, message: '密码不能小于 8 位' },
+              { validator: validateCheckPassword },
+            ]">
+              <a-input-password v-model:value="formState.checkPassword" placeholder="请确认密码" size="large"
+                class="form-input">
                 <template #prefix>
                   <SafetyOutlined class="input-icon" />
                 </template>
               </a-input-password>
             </a-form-item>
-            
+
             <a-form-item>
               <a-button type="primary" html-type="submit" size="large" block class="submit-btn">
                 注册
               </a-button>
             </a-form-item>
           </a-form>
-          
+
           <div class="form-footer">
             <span class="footer-text">已有账号？</span>
             <RouterLink to="/user/login" class="login-link">立即登录</RouterLink>
@@ -103,9 +84,10 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { userRegister } from '@/api/userController.ts'
+import { userRegister, userLogin } from '@/api/yonghuguanli'
 import { message } from 'ant-design-vue'
 import { reactive } from 'vue'
+import { useLoginUserStore } from '@/stores/loginUser'
 import { UserOutlined, LockOutlined, SafetyOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -134,15 +116,29 @@ const validateCheckPassword = (rule: unknown, value: string, callback: (error?: 
  * 提交表单
  * @param values
  */
+const loginUserStore = useLoginUserStore()
+
 const handleSubmit = async (values: API.UserRegisterRequest) => {
   const res = await userRegister(values)
-  // 注册成功，跳转到登录页面
   if (res.data.code === 0) {
-    message.success('注册成功')
-    router.push({
-      path: '/user/login',
-      replace: true,
-    })
+    message.success('注册成功，正在自动登录...')
+    // 注册成功后自动登录
+    try {
+      const loginRes = await userLogin({
+        userAccount: values.userAccount,
+        userPassword: values.userPassword,
+      })
+      if (loginRes.data.code === 0 && loginRes.data.data) {
+        loginUserStore.setLoginUser(loginRes.data.data)
+        message.success('登录成功')
+        const redirect = router.currentRoute.value.query.redirect as string
+        router.push({ path: redirect || '/', replace: true })
+      } else {
+        router.push({ path: '/user/login', replace: true })
+      }
+    } catch {
+      router.push({ path: '/user/login', replace: true })
+    }
   } else {
     message.error('注册失败，' + res.data.message)
   }
@@ -197,13 +193,22 @@ const handleSubmit = async (values: API.UserRegisterRequest) => {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
   animation: pulse-bg 8s ease-in-out infinite;
 }
 
 @keyframes pulse-bg {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
 }
 
 .brand-content {
@@ -375,19 +380,19 @@ const handleSubmit = async (values: API.UserRegisterRequest) => {
     min-height: auto;
     border-radius: var(--radius-xl);
   }
-  
+
   .brand-section {
     padding: 32px 24px;
   }
-  
+
   .brand-title {
     font-size: 22px;
   }
-  
+
   .brand-features {
     display: none;
   }
-  
+
   .form-section {
     padding: 32px 24px;
   }

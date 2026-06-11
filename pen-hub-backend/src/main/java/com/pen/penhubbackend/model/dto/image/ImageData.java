@@ -134,6 +134,7 @@ public class ImageData {
             int base64Start = url.indexOf(",");
             if (base64Start > 0) {
                 String base64Data = url.substring(base64Start + 1);
+                // 解码 base64
                 return Base64.getDecoder().decode(base64Data);
             }
         }
