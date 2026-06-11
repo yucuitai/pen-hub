@@ -30,7 +30,7 @@ export const STATUS_TAG_COLOR_MAP: Record<string, string> = {
 export const STATUS_COLOR_MAP: Record<string, string> = {
   [ArticleStatus.PENDING]: '#6B7280',
   [ArticleStatus.PROCESSING]: '#3B82F6',
-  [ArticleStatus.COMPLETED]: '#22C55E',
+  [ArticleStatus.COMPLETED]: '#16A34A',
   [ArticleStatus.FAILED]: '#EF4444',
 }
 

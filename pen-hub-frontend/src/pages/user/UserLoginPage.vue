@@ -142,7 +142,7 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
+  background: linear-gradient(135deg, #D97706 0%, #B45309 50%, #92400E 100%);
 }
 
 .brand-bg::before {
@@ -274,7 +274,7 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
 .form-input:focus,
 .form-input:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
 .form-input :deep(.ant-input) {
@@ -294,7 +294,7 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: var(--shadow-green) !important;
+  box-shadow: var(--shadow-warm) !important;
   transition: opacity var(--transition-normal) !important;
 }
 
@@ -304,7 +304,7 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: var(--shadow-green) !important;
+  box-shadow: var(--shadow-warm) !important;
   opacity: 0.92;
 }
 

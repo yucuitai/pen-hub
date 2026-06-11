@@ -268,7 +268,7 @@ const handleLogout = async () => {
 
 .nav-item.active {
   color: var(--color-primary-dark);
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(217, 119, 6, 0.1);
 }
 
 .nav-icon {
@@ -348,14 +348,14 @@ const handleLogout = async () => {
   color: white;
   background: var(--gradient-primary);
   border: none;
-  box-shadow: var(--shadow-green);
+  box-shadow: var(--shadow-warm);
   transition: all var(--transition-normal);
   text-decoration: none;
 }
 
 .login-btn:hover {
   color: white;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
 }
 
 /* 响应式 */

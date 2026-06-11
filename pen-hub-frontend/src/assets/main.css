@@ -22,8 +22,8 @@ body {
   color: var(--color-text);
   background: var(--color-background);
   font-family:
-    'Work Sans',
-    Inter,
+    'Noto Sans SC',
+    'Inter',
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
@@ -34,6 +34,11 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 衬线字体用于标题 */
+h1, h2, h3, .hero-title {
+  font-family: 'Noto Serif SC', 'Playfair Display', serif;
 }
 
 #app {

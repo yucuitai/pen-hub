@@ -1,47 +1,47 @@
 /**
- * CSS 变量定义 - 清新绿色配色方案
+ * CSS 变量定义 - 暖色纸感主题
  */
 
-/* 引入 Google Fonts - Geometric Modern */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap');
+/* 引入 Google Fonts - Noto + Inter 体系 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
 
 :root {
-  /* 品牌色 - 绿色系 */
-  --color-primary: #22C55E;
-  --color-primary-light: #4ADE80;
-  --color-primary-dark: #16A34A;
-  --color-secondary: #0F172A;
-  --color-secondary-light: #334155;
+  /* 品牌色 - 琥珀色系 */
+  --color-primary: #D97706;
+  --color-primary-light: #F59E0B;
+  --color-primary-dark: #B45309;
+  --color-secondary: #1C1917;
+  --color-secondary-light: #57534E;
 
   /* 功能色 */
-  --color-cta: #22C55E;
-  --color-success: #22C55E;
-  --color-warning: #EAB308;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  --color-cta: #D97706;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-info: #0284C7;
 
-  /* 中性色 */
-  --color-background: #FFFFFF;
-  --color-background-secondary: #F8FAFC;
-  --color-background-tertiary: #F1F5F9;
-  --color-background-dark: #0F172A;
-  --color-text: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
-  --color-border: #E2E8F0;
-  --color-border-light: #F1F5F9;
+  /* 中性色 - 暖色调 */
+  --color-background: #FEFCF6;
+  --color-background-secondary: #F5F0E8;
+  --color-background-tertiary: #EDE6D8;
+  --color-background-dark: #292524;
+  --color-text: #1C1917;
+  --color-text-secondary: #78716C;
+  --color-text-muted: #A8A29E;
+  --color-border: #E7E5E4;
+  --color-border-light: #F0EBE1;
 
   /* 渐变 */
-  --gradient-primary: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
-  --gradient-hero: linear-gradient(180deg, #DCFCE7 0%, #FFFFFF 100%);
-  --gradient-hero-dark: linear-gradient(180deg, #166534 0%, #14532D 100%);
+  --gradient-primary: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  --gradient-hero: linear-gradient(180deg, #F5F0E8 0%, #FEFCF6 100%);
+  --gradient-hero-dark: linear-gradient(180deg, #78350F 0%, #451A03 100%);
 
   /* 纯色背景 */
-  --bg-primary: #22C55E;
-  --bg-primary-hover: #16A34A;
-  --bg-dark: #0F172A;
-  --bg-dark-hover: #1E293B;
-  --bg-success: #22C55E;
+  --bg-primary: #D97706;
+  --bg-primary-hover: #B45309;
+  --bg-dark: #292524;
+  --bg-dark-hover: #44403C;
+  --bg-success: #16A34A;
 
   /* 阴影 */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -49,8 +49,8 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 8px 24px rgba(34, 197, 94, 0.15);
-  --shadow-green: 0 4px 14px rgba(34, 197, 94, 0.25);
+  --shadow-card-hover: 0 8px 24px rgba(217, 119, 6, 0.12);
+  --shadow-warm: 0 4px 14px rgba(217, 119, 6, 0.20);
 
   /* 圆角 */
   --radius-sm: 6px;
@@ -66,8 +66,8 @@
   --transition-slow: 300ms ease-out;
 
   /* 毛玻璃 */
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-bg-green: rgba(220, 252, 231, 0.8);
+  --glass-bg: rgba(254, 252, 246, 0.92);
+  --glass-bg-warm: rgba(245, 240, 232, 0.8);
   --glass-blur: blur(12px);
 
   /* 响应式断点（用于 JS 读取） */

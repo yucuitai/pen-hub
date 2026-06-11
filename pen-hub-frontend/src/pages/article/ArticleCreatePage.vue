@@ -229,7 +229,7 @@
               <PictureOutlined />
               <span>正在生成配图</span>
             </div>
-            <a-progress :percent="imageProgress" status="active" :stroke-color="{ from: '#22C55E', to: '#16A34A' }" />
+            <a-progress :percent="imageProgress" status="active" :stroke-color="{ from: '#D97706', to: '#B45309' }" />
             <p class="progress-hint">{{ imageCount }}/{{ totalImages }} 张图片已完成</p>
           </div>
 
@@ -289,7 +289,7 @@
             <a-progress
               :percent="(quota / 5) * 100"
               :show-info="false"
-              :stroke-color="quota <= 1 ? '#ff4d4f' : '#22C55E'"
+              :stroke-color="quota <= 1 ? '#ff4d4f' : '#D97706'"
               size="small"
               class="quota-progress"
             />
@@ -1100,7 +1100,7 @@ onBeforeUnmount(() => {
   }
 
   .active & {
-    background: rgba(34, 197, 94, 0.1);
+    background: rgba(217, 119, 6, 0.1);
     color: var(--color-primary);
     border: 2px solid var(--color-primary);
   }
@@ -1216,7 +1216,7 @@ onBeforeUnmount(() => {
 
   &:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
   }
 }
 
@@ -1228,7 +1228,7 @@ onBeforeUnmount(() => {
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
 
   &:hover,
   &:focus,
@@ -1236,7 +1236,7 @@ onBeforeUnmount(() => {
     background: var(--gradient-primary) !important;
     color: white !important;
     border: none !important;
-    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
     opacity: 0.92;
   }
 
@@ -1288,12 +1288,12 @@ onBeforeUnmount(() => {
 
 .style-group :deep(.ant-radio-wrapper:hover) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(217, 119, 6, 0.04);
 }
 
 .style-group :deep(.ant-radio-wrapper-checked) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(217, 119, 6, 0.08);
 }
 
 /* 配图方式选择 */
@@ -1339,12 +1339,12 @@ onBeforeUnmount(() => {
 
 .methods-group :deep(.ant-checkbox-wrapper:hover) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(217, 119, 6, 0.04);
 }
 
 .methods-group :deep(.ant-checkbox-wrapper-checked) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(217, 119, 6, 0.08);
 }
 
 .methods-group :deep(.ant-checkbox-wrapper-disabled) {
@@ -1364,11 +1364,11 @@ onBeforeUnmount(() => {
   gap: 6px;
   margin-top: 12px;
   padding: 10px 14px;
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(217, 119, 6, 0.08);
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-primary-dark);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(217, 119, 6, 0.2);
 
   .anticon {
     color: var(--color-primary);
@@ -1605,7 +1605,7 @@ onBeforeUnmount(() => {
 
 /* 配额信息样式 */
 .quota-section {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05) 0%, rgba(217, 119, 6, 0.02) 100%);
   border-radius: var(--radius-lg);
   padding: 16px !important;
   margin: -8px -8px 12px -8px;
@@ -1702,7 +1702,7 @@ onBeforeUnmount(() => {
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
-    background: rgba(34, 197, 94, 0.05);
+    background: rgba(217, 119, 6, 0.05);
     transform: translateY(-1px);
   }
 }
@@ -1724,7 +1724,7 @@ onBeforeUnmount(() => {
   transition: all var(--transition-fast);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.05);
+    background: rgba(217, 119, 6, 0.05);
   }
 }
 
@@ -1793,7 +1793,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 8px;
   padding: 12px;
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(217, 119, 6, 0.08);
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-primary-dark);

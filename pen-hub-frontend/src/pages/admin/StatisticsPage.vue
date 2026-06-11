@@ -21,7 +21,7 @@
         <!-- 核心指标卡片 -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon" style="background: rgba(34, 197, 94, 0.1)">
+            <div class="stat-icon" style="background: rgba(217, 119, 6, 0.1)">
               <FileTextOutlined style="color: var(--color-primary)" />
             </div>
             <div class="stat-content">
@@ -220,8 +220,8 @@ const renderTrendChart = () => {
         ],
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#4ADE80' },
-            { offset: 1, color: '#22C55E' }
+            { offset: 0, color: '#F59E0B' },
+            { offset: 1, color: '#D97706' }
           ]),
           borderRadius: [4, 4, 0, 0]
         },
@@ -279,7 +279,7 @@ const renderUserChart = () => {
           {
             value: stats.value.vipUserCount ?? 0,
             name: 'VIP 会员',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#D97706' }
           },
           {
             value: stats.value.activeUserCount ?? 0,
@@ -330,7 +330,7 @@ const renderQuotaChart = () => {
           {
             value: remainingQuota,
             name: '剩余',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#D97706' }
           }
         ],
         emphasis: {

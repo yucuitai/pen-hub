@@ -62,7 +62,7 @@ const features = [
     icon: FileTextOutlined,
     title: '智能生成标题',
     description: 'AI 自动分析选题，生成吸引眼球的爆款标题',
-    color: '#22C55E'
+    color: '#D97706'
   },
   {
     icon: OrderedListOutlined,
@@ -210,8 +210,8 @@ const features = [
   align-items: center;
   gap: 8px;
   padding: 8px 20px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.2);
   border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
@@ -277,7 +277,7 @@ const features = [
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: var(--shadow-green) !important;
+  box-shadow: var(--shadow-warm) !important;
   display: flex !important;
   align-items: center;
   gap: 8px;
@@ -352,7 +352,7 @@ const features = [
 
 .indicator-dot:hover {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(217, 119, 6, 0.1);
 }
 
 .indicator-dot.active {
@@ -390,7 +390,7 @@ const features = [
 .section-badge {
   display: inline-block;
   padding: 6px 16px;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(217, 119, 6, 0.1);
   border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 600;
