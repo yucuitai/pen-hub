@@ -255,8 +255,8 @@ const handleRedeem = async () => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.2);
   border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 600;
@@ -314,7 +314,7 @@ const handleRedeem = async () => {
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
-  box-shadow: var(--shadow-green);
+  box-shadow: var(--shadow-warm);
 }
 
 .redeem-header {
@@ -329,7 +329,7 @@ const handleRedeem = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(217, 119, 6, 0.1);
   border-radius: var(--radius-lg);
 
   .anticon {
@@ -391,7 +391,7 @@ const handleRedeem = async () => {
 
   &:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
   }
 }
 
@@ -402,7 +402,7 @@ const handleRedeem = async () => {
   font-weight: 600;
   background: var(--gradient-primary) !important;
   border: none !important;
-  box-shadow: var(--shadow-green) !important;
+  box-shadow: var(--shadow-warm) !important;
   border-radius: var(--radius-md) !important;
 
   &:hover:not(:disabled) {
@@ -471,7 +471,7 @@ const handleRedeem = async () => {
   transition: all var(--transition-normal);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.06);
+    background: rgba(217, 119, 6, 0.06);
   }
 }
 
@@ -482,7 +482,7 @@ const handleRedeem = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(217, 119, 6, 0.1);
   border-radius: var(--radius-md);
 }
 
