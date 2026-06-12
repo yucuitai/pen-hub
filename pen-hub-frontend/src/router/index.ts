@@ -38,6 +38,11 @@ const router = createRouter({
       component: () => import('@/pages/admin/StatisticsPage.vue'),
     },
     {
+      path: '/admin/prompts',
+      name: 'Prompt管理',
+      component: () => import('@/pages/admin/PromptManagePage.vue'),
+    },
+    {
       path: '/vip',
       name: '会员兑换',
       component: () => import('@/pages/VipPage.vue'),
@@ -46,6 +51,16 @@ const router = createRouter({
       path: '/create',
       name: '文章创作',
       component: () => import('@/pages/article/ArticleCreatePage.vue'),
+    },
+    {
+      path: '/template',
+      name: '文案模板',
+      component: () => import('@/pages/template/TemplatePage.vue'),
+    },
+    {
+      path: '/batch',
+      name: '批量创作',
+      component: () => import('@/pages/article/BatchCreatePage.vue'),
     },
     {
       path: '/article/list',

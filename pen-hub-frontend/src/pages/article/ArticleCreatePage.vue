@@ -45,8 +45,11 @@
           <div v-if="currentPhase === 'INPUT'" key="input" class="input-state">
           <div class="input-card">
             <div class="input-header">
-              <h1 class="input-title">创作新文章</h1>
-              <p class="input-subtitle">输入选题，AI 帮你生成爆款文章</p>
+              <h1 class="input-title">{{ contentType === 'SHORT_VIDEO_SCRIPT' ? '创作短视频脚本' : contentType === 'LIVE_SCRIPT' ? '创作直播台本' : '创作新文章' }}</h1>
+              <p class="input-subtitle">{{ contentType === 'SHORT_VIDEO_SCRIPT' ? '输入选题，AI 帮你生成短视频脚本' : contentType === 'LIVE_SCRIPT' ? '输入选题，AI 帮你生成直播台本' : '输入选题，AI 帮你生成爆款文章' }}</p>
+              <router-link to="/template" class="template-link">
+                <AppstoreOutlined /> 浏览模板
+              </router-link>
             </div>
 
             <div class="input-area">
@@ -74,8 +77,8 @@
                 </a-radio-group>
               </div>
 
-              <!-- 配图方式选择 -->
-              <div class="image-methods-section">
+              <!-- 配图方式选择（仅文章类型显示） -->
+              <div v-if="!isScriptType" class="image-methods-section">
                 <div class="section-header">
                   <span class="section-title">配图方式</span>
                   <span class="section-tip">（不选择表示支持所有方式）</span>
@@ -530,6 +533,82 @@
       </aside>
     </div>
 
+    <!-- 移动端顶部进度条 -->
+    <div v-if="isMobile && currentPhase !== 'INPUT'" class="mobile-progress-bar">
+      <div class="progress-steps">
+        <div
+          v-for="(step, index) in agentSteps"
+          :key="index"
+          :class="['progress-step', {
+            'active': currentStep === index,
+            'completed': currentStep > index,
+          }]"
+        >
+          <div class="step-dot">
+            <CheckCircleOutlined v-if="currentStep > index" />
+            <LoadingOutlined v-else-if="currentStep === index && isCreating" class="spin-icon" />
+            <span v-else>{{ index + 1 }}</span>
+          </div>
+          <span class="step-label">{{ step.title }}</span>
+        </div>
+      </div>
+      <div class="progress-line">
+        <div class="progress-fill" :style="{ width: `${(currentStep / (agentSteps.length - 1)) * 100}%` }"></div>
+      </div>
+    </div>
+
+    <!-- 移动端底部操作栏 -->
+    <div v-if="isMobile" class="mobile-action-bar">
+      <template v-if="currentPhase === 'INPUT'">
+        <a-button
+          type="primary"
+          size="large"
+          block
+          :disabled="!topic.trim() || !hasQuota || isCreating"
+          :loading="isCreating"
+          @click="startCreate"
+          class="mobile-create-btn"
+        >
+          {{ isCreating ? '生成中...' : '开始创作' }}
+        </a-button>
+      </template>
+      <template v-else-if="currentPhase === 'TITLE_SELECTING'">
+        <a-button
+          type="primary"
+          size="large"
+          block
+          :loading="confirmLoading"
+          @click="handleConfirmTitle"
+          class="mobile-create-btn"
+        >
+          确认标题
+        </a-button>
+      </template>
+      <template v-else-if="currentPhase === 'OUTLINE_EDITING'">
+        <a-button
+          type="primary"
+          size="large"
+          block
+          :loading="confirmLoading"
+          @click="handleConfirmOutline"
+          class="mobile-create-btn"
+        >
+          确认大纲，开始生成
+        </a-button>
+      </template>
+      <template v-else-if="currentPhase === 'COMPLETED'">
+        <a-button
+          type="primary"
+          size="large"
+          block
+          @click="viewArticle"
+          class="mobile-create-btn"
+        >
+          查看文章
+        </a-button>
+      </template>
+    </div>
+
     <!-- 错误提示 -->
     <a-modal
       v-model:open="errorVisible"
@@ -542,9 +621,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, onMounted, nextTick, computed } from 'vue'
+import { ref, onBeforeUnmount, onMounted, nextTick, computed, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import {
   RocketOutlined,
@@ -565,9 +644,10 @@ import {
   PictureOutlined,
   WarningOutlined,
   CrownOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  AppstoreOutlined
 } from '@ant-design/icons-vue'
-import { createArticle, startArticle, confirmTitle, confirmOutline } from '@/api/articleController'
+import { createArticle, startArticle, confirmTitle, confirmOutline, getArticle } from '@/api/articleController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { isAdmin as checkIsAdmin, isVip as checkIsVip, hasQuota as checkHasQuota } from '@/utils/permission'
 import { marked } from 'marked'
@@ -584,15 +664,61 @@ const isVip = computed(() => checkIsVip(loginUserStore.loginUser))
 const quota = computed(() => loginUserStore.loginUser.quota ?? 0)
 const hasQuota = computed(() => checkHasQuota(loginUserStore.loginUser))
 
-// 智能体步骤（对应后端 6 个步骤）
-const agentSteps = [
-  { title: '生成标题', description: 'AI 分析选题，生成吸睛标题' },
-  { title: '规划大纲', description: '构建文章结构，理清脉络' },
-  { title: '撰写正文', description: '流式生成高质量文章内容' },
-  { title: '分析配图', description: '智能分析配图需求和位置' },
-  { title: '生成配图', description: '自动匹配高清无版权图片' },
-  { title: '图文合成', description: '将配图插入正文，完美呈现' },
-]
+// 移动端检测
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
+// 内容类型（从路由查询参数读取）
+const contentType = ref<string>((route.query.contentType as string) || 'ARTICLE')
+const isScriptType = computed(() => contentType.value === 'SHORT_VIDEO_SCRIPT' || contentType.value === 'LIVE_SCRIPT')
+
+// 脚本类型专属字段
+const platform = ref('douyin')
+const duration = ref('30s')
+const liveType = ref('ecommerce')
+const productInfo = ref('')
+const participantCount = ref(2)
+
+// 智能体步骤（根据内容类型动态切换）
+const agentSteps = computed(() => {
+  if (contentType.value === 'SHORT_VIDEO_SCRIPT') {
+    return [
+      { title: '生成Hook', description: 'AI 设计短视频开场钩子' },
+      { title: '规划分镜', description: '规划视频画面与节奏' },
+      { title: '撰写台词', description: '撰写逐镜台词脚本' },
+      { title: '质量审核', description: 'AI 审核脚本质量' },
+      { title: '脚本合成', description: '生成完整短视频脚本' },
+    ]
+  }
+  if (contentType.value === 'LIVE_SCRIPT') {
+    return [
+      { title: '规划流程', description: '设计直播整体流程' },
+      { title: '生成话术', description: '生成各环节话术' },
+      { title: '设计互动', description: '设计观众互动环节' },
+      { title: '应急话术', description: '生成突发状况应对方案' },
+      { title: '台本合成', description: '生成完整直播台本' },
+    ]
+  }
+  return [
+    { title: '生成标题', description: 'AI 分析选题，生成吸睛标题' },
+    { title: '规划大纲', description: '构建文章结构，理清脉络' },
+    { title: '撰写正文', description: '流式生成高质量文章内容' },
+    { title: '分析配图', description: '智能分析配图需求和位置' },
+    { title: '生成配图', description: '自动匹配高清无版权图片' },
+    { title: '图文合成', description: '将配图插入正文，完美呈现' },
+  ]
+})
 
 // 示例选题
 const exampleTopics = [
@@ -735,14 +861,21 @@ const startCreate = async () => {
   isCreating.value = true
   currentStep.value = 0
   realtimeLogs.value = []
-  addLog('开始创建文章任务...', 'info')
+  const taskLabel = contentType.value === 'SHORT_VIDEO_SCRIPT' ? '短视频脚本' : contentType.value === 'LIVE_SCRIPT' ? '直播台本' : '文章'
+  addLog(`开始创建${taskLabel}任务...`, 'info')
 
   try {
     // 1. 创建任务
     const res = await createArticle({
       topic: topic.value,
       style: selectedStyle.value || undefined,
-      enabledImageMethods: selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined
+      enabledImageMethods: !isScriptType.value && selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined,
+      contentType: contentType.value !== 'ARTICLE' ? contentType.value : undefined,
+      platform: isScriptType.value ? platform.value : undefined,
+      duration: isScriptType.value ? duration.value : undefined,
+      liveType: contentType.value === 'LIVE_SCRIPT' ? liveType.value : undefined,
+      productInfo: contentType.value === 'LIVE_SCRIPT' && productInfo.value ? productInfo.value : undefined,
+      participantCount: contentType.value === 'LIVE_SCRIPT' ? String(participantCount.value) : undefined,
     })
     const newTaskId = res.data.data
     if (!newTaskId) {
@@ -898,6 +1031,92 @@ const handleSSEMessage = (msg: SSEMessage) => {
       currentPhase.value = 'INPUT'
       addLog(`创作失败: ${msg.message || '未知错误'}`, 'error')
       break
+
+    // region 短视频脚本消息
+
+    case 'SCRIPT_HOOK_COMPLETE':
+      currentPhase.value = 'CONTENT_GENERATING'
+      currentStep.value = 1
+      isStreaming.value = true
+      addLog('Hook 生成完成', 'success')
+      break
+
+    case 'SCRIPT_OUTLINE_STREAMING':
+      article.value.content += msg.content || ''
+      scrollToBottom()
+      break
+
+    case 'SCRIPT_OUTLINE_COMPLETE':
+      currentStep.value = 2
+      addLog('分镜规划完成', 'success')
+      break
+
+    case 'SCRIPT_CONTENT_STREAMING':
+      article.value.content += msg.content || ''
+      scrollToBottom()
+      break
+
+    case 'SCRIPT_CONTENT_COMPLETE':
+      currentStep.value = 3
+      isStreaming.value = false
+      addLog('脚本内容生成完成', 'success')
+      break
+
+    case 'SCRIPT_REVIEW_COMPLETE':
+      currentStep.value = 4
+      addLog('质量审核完成', 'success')
+      break
+
+    case 'SCRIPT_MERGE_COMPLETE':
+      if (msg.markdownContent) {
+        article.value.fullContent = msg.markdownContent
+      }
+      currentStep.value = 5
+      scrollToBottom()
+      addLog('脚本合成完成', 'success')
+      break
+
+    // endregion
+
+    // region 直播台本消息
+
+    case 'LIVE_OUTLINE_COMPLETE':
+      currentPhase.value = 'CONTENT_GENERATING'
+      currentStep.value = 1
+      addLog('直播流程规划完成', 'success')
+      break
+
+    case 'LIVE_SCRIPT_STREAMING':
+      article.value.content += msg.content || ''
+      scrollToBottom()
+      break
+
+    case 'LIVE_SCRIPT_COMPLETE':
+      currentStep.value = 2
+      isStreaming.value = false
+      addLog('话术生成完成', 'success')
+      break
+
+    case 'LIVE_INTERACTION_COMPLETE':
+      currentStep.value = 3
+      addLog('互动环节设计完成', 'success')
+      break
+
+    case 'LIVE_EMERGENCY_COMPLETE':
+      currentStep.value = 4
+      addLog('应急话术生成完成', 'success')
+      break
+
+    case 'LIVE_MERGE_COMPLETE':
+      if (msg.markdownContent) {
+        article.value.fullContent = msg.markdownContent
+      }
+      currentStep.value = 5
+      scrollToBottom()
+      addLog('直播台本合成完成', 'success')
+      break
+
+    // endregion
   }
 }
 
@@ -999,11 +1218,68 @@ const resetCreate = () => {
 }
 
 // 组件挂载时检查路由参数
-onMounted(() => {
+onMounted(async () => {
   if (route.query.topic) {
     topic.value = route.query.topic as string
   }
+  // 断点续传：通过 taskId 参数恢复未完成的文章
+  if (route.query.taskId) {
+    try {
+      const res = await getArticle({ taskId: route.query.taskId as string })
+      if (res.data.code === 0 && res.data.data) {
+        resumeArticle(res.data.data)
+      }
+    } catch (e) {
+      message.warning('无法加载文章，请重新创作')
+    }
+  }
 })
+
+// 恢复未完成的文章状态
+const resumeArticle = (unfinished: API.ArticleVO) => {
+  taskId.value = unfinished.taskId || ''
+  topic.value = unfinished.topic || ''
+  const phase = unfinished.phase
+
+  if (phase === 'TITLE_SELECTING') {
+    currentPhase.value = 'TITLE_SELECTING'
+    titleOptions.value = (unfinished.titleOptions || []) as any
+  } else if (phase === 'OUTLINE_EDITING') {
+    if (unfinished.fullContent || unfinished.status === 'COMPLETED') {
+      currentPhase.value = 'COMPLETED'
+      currentStep.value = 6
+    } else {
+      currentPhase.value = 'OUTLINE_EDITING'
+    }
+    article.value.mainTitle = unfinished.mainTitle || ''
+    article.value.subTitle = unfinished.subTitle || ''
+    outline.value = (unfinished.outline || []) as any
+  } else {
+    // 其他阶段（CONTENT_GENERATING 等）
+    article.value.mainTitle = unfinished.mainTitle || ''
+    article.value.subTitle = unfinished.subTitle || ''
+    outline.value = (unfinished.outline || []) as any
+    article.value.content = unfinished.content || ''
+    article.value.fullContent = unfinished.fullContent || ''
+
+    if (unfinished.fullContent || unfinished.status === 'COMPLETED') {
+      currentPhase.value = 'COMPLETED'
+      currentStep.value = 6
+    } else if (unfinished.content) {
+      currentPhase.value = 'CONTENT_GENERATING'
+      currentStep.value = 2
+      if (outline.value && outline.value.length > 0) {
+        outlineRaw.value = JSON.stringify({ sections: outline.value })
+      }
+    } else if (outline.value && outline.value.length > 0) {
+      currentPhase.value = 'OUTLINE_EDITING'
+      outlineRaw.value = JSON.stringify({ sections: outline.value })
+    } else {
+      currentPhase.value = 'INPUT'
+      message.warning('未完成的文章数据不完整，请重新创作')
+    }
+  }
+}
 
 // 组件卸载前关闭 SSE
 onBeforeUnmount(() => {
@@ -1200,6 +1476,21 @@ onBeforeUnmount(() => {
   font-size: 15px;
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+.template-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--color-primary);
+  font-weight: 500;
+  transition: opacity var(--transition-fast);
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
 .input-area {
@@ -2103,6 +2394,154 @@ onBeforeUnmount(() => {
 
   .main-content {
     padding: 20px;
+  }
+}
+
+/* 移动端进度条 */
+.mobile-progress-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+
+  .step-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-background-secondary);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+  }
+
+  .step-label {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  &.active {
+    .step-dot {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    .step-label {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+  }
+
+  &.completed {
+    .step-dot {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      color: white;
+    }
+
+    .step-label {
+      color: var(--color-success);
+    }
+  }
+}
+
+.progress-line {
+  height: 3px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+  }
+}
+
+/* 移动端底部操作栏 */
+.mobile-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: white;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-create-btn {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-primary) !important;
+  border: none !important;
+  color: white !important;
+}
+
+/* 移动端额外适配 */
+@media (max-width: 768px) {
+  .input-card {
+    padding: 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  .input-title {
+    font-size: 22px;
+  }
+
+  .input-subtitle {
+    font-size: 13px;
+  }
+
+  .topic-textarea {
+    :deep(textarea) {
+      font-size: 14px;
+    }
+  }
+
+  .style-section,
+  .image-methods-section {
+    .section-title {
+      font-size: 13px;
+    }
+  }
+
+  .example-topics {
+    display: none;
+  }
+
+  /* 为底部操作栏留出空间 */
+  .article-create-page {
+    padding-bottom: 80px;
   }
 }
 </style>

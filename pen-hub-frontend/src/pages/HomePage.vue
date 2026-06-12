@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
+import ContentTypeSelector from '@/components/ContentTypeSelector.vue'
 import {
   RocketOutlined,
   FileTextOutlined,
@@ -17,6 +18,7 @@ const router = useRouter()
 const loginUserStore = useLoginUserStore()
 const topic = ref('')
 const currentPage = ref(0)
+const showContentTypeSelector = ref(false)
 
 const scrollToFeatures = () => {
   document.querySelector('.features-section')?.scrollIntoView({ behavior: 'smooth' })
@@ -50,11 +52,15 @@ const goToCreate = () => {
     router.push('/user/login')
     return
   }
+  showContentTypeSelector.value = true
+}
+
+const handleContentTypeSelect = (contentType: string) => {
+  const query: Record<string, string> = { contentType }
   if (topic.value.trim()) {
-    router.push({ path: '/create', query: { topic: topic.value } })
-  } else {
-    router.push('/create')
+    query.topic = topic.value
   }
+  router.push({ path: '/create', query })
 }
 
 const features = [
@@ -178,6 +184,11 @@ const features = [
       </div>
     </section>
   </div>
+
+  <ContentTypeSelector
+    v-model:open="showContentTypeSelector"
+    @select="handleContentTypeSelect"
+  />
 </template>
 
 <style scoped>

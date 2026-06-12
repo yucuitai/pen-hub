@@ -139,4 +139,57 @@ public interface ArticleService extends IService<Article> {
      * @return 修改后的大纲
      */
     List<ArticleState.OutlineSection> aiModifyOutline(String taskId, String modifySuggestion, User loginUser);
+
+    /**
+     * 保存状态快照（断点续传用）
+     *
+     * @param taskId 任务ID
+     * @param state  当前文章状态
+     */
+    void saveStateSnapshot(String taskId, ArticleState state);
+
+    /**
+     * 获取用户未完成的文章
+     *
+     * @param loginUser 当前登录用户
+     * @return 未完成的文章VO（可能为null）
+     */
+    ArticleVO getUnfinishedArticle(User loginUser);
+
+    /**
+     * 分页查询收藏文章
+     *
+     * @param pageNum   页码
+     * @param pageSize  每页大小
+     * @param loginUser 当前登录用户
+     * @return 分页结果
+     */
+    Page<ArticleVO> listFavoriteArticleByPage(long pageNum, long pageSize, User loginUser);
+
+    /**
+     * 切换文章收藏状态
+     *
+     * @param taskId    文章任务ID
+     * @param loginUser 当前登录用户
+     * @return 收藏后的状态（true=已收藏, false=取消收藏）
+     */
+    boolean toggleFavorite(String taskId, User loginUser);
+
+    /**
+     * 更新文章标签
+     *
+     * @param taskId    文章任务ID
+     * @param tags      标签列表
+     * @param loginUser 当前登录用户
+     */
+    void updateTags(String taskId, List<String> tags, User loginUser);
+
+    /**
+     * 更新文章内容（二次编辑）
+     *
+     * @param taskId    文章任务ID
+     * @param content   新的 Markdown 内容
+     * @param loginUser 当前登录用户
+     */
+    void updateContent(String taskId, String content, User loginUser);
 }

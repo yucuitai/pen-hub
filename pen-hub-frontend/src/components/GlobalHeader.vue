@@ -25,6 +25,11 @@
 
       <!-- 右侧：用户操作区域 -->
       <div class="header-right">
+        <!-- 主题切换按钮 -->
+        <div class="theme-toggle" @click="themeStore.toggleTheme()" :title="themeStore.theme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'">
+          <span class="theme-icon">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</span>
+        </div>
+
         <!-- 已登录：显示用户信息 -->
         <div v-if="isLoggedIn" class="user-section">
           <a-dropdown>
@@ -79,11 +84,13 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { useThemeStore } from '@/stores/themeStore'
 import { userLogout } from '@/api/yonghuguanli'
 import { isAdmin, isVip } from '@/utils/permission'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const themeStore = useThemeStore()
 
 // 用户状态
 const loginUser = computed(() => loginUserStore.loginUser)
@@ -356,6 +363,33 @@ const handleLogout = async () => {
 .login-btn:hover {
   color: white;
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+}
+
+/* 主题切换按钮 */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+
+.theme-toggle:hover {
+  background: var(--color-background-tertiary);
+  color: var(--color-primary);
+}
+
+.theme-icon {
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 响应式 */

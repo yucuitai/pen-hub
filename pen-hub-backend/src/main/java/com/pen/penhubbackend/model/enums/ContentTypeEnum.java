@@ -5,8 +5,7 @@ import lombok.Getter;
 /**
  * 内容类型枚举
  *
- * 设计原则：智能体是"能力"，不是"场景"
- * 4个智能体 × N种场景模式，通过枚举切换不同的 prompt 和策略
+ * Phase 4 v2.0 内容类型扩展：支持短视频脚本和直播台本
  *
  * @author pen-hub
  */
@@ -14,31 +13,43 @@ import lombok.Getter;
 public enum ContentTypeEnum {
 
     /**
-     * 新媒体文案 - v1.0
-     * 适用场景：公众号、小红书、抖音、微博等短文案
+     * 普通文章 - v1.0
+     * 适用场景：公众号、小红书、抖音、微博等新媒体文案
      */
-    NEW_MEDIA("新媒体文案", "1.0", "短文案生成场景"),
+    ARTICLE("文章", "1.0", "新媒体文案生成"),
 
     /**
-     * 小说创作 - v2.0 (规划中)
-     * 适用场景：短篇、中篇、长篇小说
+     * 短视频脚本 - v2.0
+     * 适用场景：抖音/B站/视频号短视频脚本，含分镜、台词、画面描述
      */
-    NOVEL("小说创作", "2.0", "长文本创作场景"),
+    SHORT_VIDEO_SCRIPT("短视频脚本", "2.0", "短视频脚本生成"),
 
     /**
-     * 剧本写作 - v3.0 (规划中)
-     * 适用场景：影视剧本、舞台剧等
+     * 直播台本 - v2.0
+     * 适用场景：电商带货/知识分享/活动直播，含环节、话术、互动节点
      */
-    SCRIPT("剧本写作", "3.0", "剧本创作场景"),
+    LIVE_SCRIPT("直播台本", "2.0", "直播台本生成"),
 
     /**
-     * 长文章 - v2.0 (规划中)
-     * 适用场景：深度报道、长文分析等
+     * 访谈/对话脚本 - v2.1 (规划中)
+     * 适用场景：播客、访谈节目
      */
-    ARTICLE("长文章", "2.0", "深度内容场景");
+    INTERVIEW_SCRIPT("访谈脚本", "2.1", "访谈对话脚本生成"),
 
     /**
-     * 场景描述
+     * 活动/会议台本 - v2.1 (规划中)
+     * 适用场景：线下活动、发布会
+     */
+    EVENT_SCRIPT("活动台本", "2.1", "活动会议台本生成"),
+
+    /**
+     * 剧本/故事脚本 - v2.2 (规划中)
+     * 适用场景：短剧、微电影
+     */
+    DRAMA_SCRIPT("剧本", "2.2", "剧本故事脚本生成");
+
+    /**
+     * 类型描述
      */
     private final String description;
 
@@ -59,19 +70,40 @@ public enum ContentTypeEnum {
     }
 
     /**
-     * 根据名称获取枚举（忽略大小写）
+     * 根据值获取枚举（忽略大小写）
      *
-     * @param name 枚举名称
+     * @param value 枚举值
      * @return 对应的枚举值，如果不存在则返回 null
      */
-    public static ContentTypeEnum getByName(String name) {
-        if (name == null || name.isEmpty()) {
+    public static ContentTypeEnum getEnumByValue(String value) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
         try {
-            return valueOf(name.toUpperCase());
+            return valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * 判断是否为脚本类型（非普通文章）
+     */
+    public boolean isScriptType() {
+        return this != ARTICLE;
+    }
+
+    /**
+     * 判断是否为短视频脚本
+     */
+    public boolean isShortVideoScript() {
+        return this == SHORT_VIDEO_SCRIPT;
+    }
+
+    /**
+     * 判断是否为直播台本
+     */
+    public boolean isLiveScript() {
+        return this == LIVE_SCRIPT;
     }
 }

@@ -110,6 +110,45 @@
             <div ref="quotaChartRef" class="chart-container"></div>
           </a-card>
         </div>
+
+        <!-- AI 调用统计 -->
+        <div class="charts-grid" v-if="aiStats">
+          <a-card :bordered="false" class="chart-card">
+            <h3 class="chart-title">
+              <RobotOutlined />
+              AI 调用统计
+            </h3>
+            <div class="performance-stats">
+              <div class="perf-item">
+                <span class="perf-label">总调用次数</span>
+                <span class="perf-value">{{ aiStats.totalCalls ?? 0 }}</span>
+              </div>
+              <a-divider />
+              <div class="perf-item">
+                <span class="perf-label">成功率</span>
+                <span class="perf-value">{{ 100 - (aiStats.failureRate ?? 0) }}%</span>
+              </div>
+              <a-divider />
+              <div class="perf-item">
+                <span class="perf-label">平均耗时</span>
+                <span class="perf-value">{{ formatDuration(aiStats.avgDurationMs ?? 0) }}</span>
+              </div>
+              <a-divider />
+              <div class="perf-item">
+                <span class="perf-label">失败率</span>
+                <span class="perf-value" style="color: #ff4d4f">{{ aiStats.failureRate ?? 0 }}%</span>
+              </div>
+            </div>
+          </a-card>
+
+          <a-card :bordered="false" class="chart-card">
+            <h3 class="chart-title">
+              <ApartmentOutlined />
+              各智能体调用次数
+            </h3>
+            <div ref="agentCallsChartRef" class="chart-container"></div>
+          </a-card>
+        </div>
       </a-spin>
     </div>
   </div>
@@ -129,12 +168,14 @@ import {
   CrownOutlined,
   ReloadOutlined
 } from '@ant-design/icons-vue'
-import { getStatistics } from '@/api/statisticsController'
+import { getStatistics, getAiCallStats } from '@/api/statisticsController'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 
 const loading = ref(false)
 const stats = ref<API.StatisticsVO | null>(null)
+const aiStats = ref<Record<string, any> | null>(null)
+const agentCallsChartRef = ref<HTMLElement>()
 
 // ECharts 实例
 const trendChartRef = ref<HTMLElement>()
@@ -143,19 +184,25 @@ const quotaChartRef = ref<HTMLElement>()
 let trendChart: echarts.ECharts | null = null
 let userChart: echarts.ECharts | null = null
 let quotaChart: echarts.ECharts | null = null
+let agentCallsChart: echarts.ECharts | null = null
 
 // 加载数据
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getStatistics()
-    stats.value = res.data.data || null
+    const [statsRes, aiRes] = await Promise.all([
+      getStatistics(),
+      getAiCallStats().catch(() => ({ data: { data: null } }))
+    ])
+    stats.value = statsRes.data.data || null
+    aiStats.value = aiRes.data.data || null
 
     // 渲染图表
     setTimeout(() => {
       renderTrendChart()
       renderUserChart()
       renderQuotaChart()
+      renderAgentCallsChart()
     }, 100)
   } catch (error) {
     message.error((error as Error).message || '加载数据失败')
@@ -363,6 +410,43 @@ const handleResize = () => {
   quotaChart?.resize()
 }
 
+// 渲染智能体调用次数图
+const renderAgentCallsChart = () => {
+  if (!agentCallsChartRef.value || !aiStats.value?.agentCallCounts) return
+
+  if (!agentCallsChart) {
+    agentCallsChart = echarts.init(agentCallsChartRef.value)
+  }
+
+  const counts = aiStats.value.agentCallCounts as Record<string, number>
+  const names = Object.keys(counts).map(k => k.replace('agent', '').replace('_', ' '))
+  const values = Object.values(counts)
+
+  const option: EChartsOption = {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: names,
+      axisLabel: { rotate: 30, color: '#666' }
+    },
+    yAxis: { type: 'value', axisLabel: { color: '#666' } },
+    series: [{
+      data: values,
+      type: 'bar',
+      barWidth: '50%',
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#A855F7' },
+          { offset: 1, color: '#E9D5FF' }
+        ]),
+        borderRadius: [4, 4, 0, 0]
+      }
+    }]
+  }
+  agentCallsChart.setOption(option)
+}
+
 onMounted(() => {
   loadData()
   window.addEventListener('resize', handleResize)
@@ -373,6 +457,7 @@ onUnmounted(() => {
   trendChart?.dispose()
   userChart?.dispose()
   quotaChart?.dispose()
+  agentCallsChart?.dispose()
 })
 </script>
 

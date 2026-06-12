@@ -256,6 +256,67 @@ public class ArticleState implements Serializable {
         private List<ImageRequirement> imageRequirements;
     }
 
+    /**
+     * 审核结果（ReviewerAgent 生成）
+     * 包含内容质量评分、改进建议和可能的重写内容
+     */
+    @Data
+    public static class ReviewResult implements Serializable {
+        /**
+         * 质量评分（0-100）
+         */
+        private Integer reviewScore;
+
+        /**
+         * 改进建议列表
+         */
+        private List<String> suggestions;
+
+        /**
+         * 重写后的内容（评分低于 60 分时由 Agent 重写）
+         */
+        private String rewrittenContent;
+
+        /**
+         * 评分维度详情
+         */
+        private ReviewDimension dimensions;
+    }
+
+    /**
+     * 评分维度详情
+     */
+    @Data
+    public static class ReviewDimension implements Serializable {
+        /**
+         * 连贯性评分（0-100）
+         */
+        private Integer coherence;
+
+        /**
+         * 准确性评分（0-100）
+         */
+        private Integer accuracy;
+
+        /**
+         * 风格一致性评分（0-100）
+         */
+        private Integer styleConsistency;
+
+        /**
+         * 平台适配度评分（0-100）
+         */
+        private Integer platformFit;
+    }
+
+    // ==================== 审核结果 ====================
+
+    /**
+     * 审核结果（ReviewerAgent 输出）
+     * 包含评分、改进建议和可能的重写内容
+     */
+    private ReviewResult reviewResult;
+
     // ==================== 最终字段：合成后的完整内容 ====================
 
     /**

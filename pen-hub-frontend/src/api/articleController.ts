@@ -122,6 +122,49 @@ export async function listArticle(body: API.ArticleQueryRequest, options?: { [ke
   })
 }
 
+/** 分页查询收藏文章 POST /article/listFavorite */
+export async function listFavoriteArticle(
+  body: API.ArticleQueryRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponsePageArticleVO>('/article/listFavorite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 切换文章收藏状态 POST /article/favorite/${taskId} */
+export async function toggleFavorite(taskId: string, options?: { [key: string]: any }) {
+  return request<API.BaseResponseBoolean>(`/article/favorite/${taskId}`, {
+    method: 'POST',
+    ...(options || {}),
+  })
+}
+
+/** 更新文章标签 POST /article/tags/${taskId} */
+export async function updateArticleTags(
+  taskId: string,
+  body: string[],
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseBoolean>(`/article/tags/${taskId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 获取用户未完成的文章 GET /article/unfinished */
+export async function getUnfinishedArticle(options?: { [key: string]: any }) {
+  return request<API.BaseResponseArticleVO>('/article/unfinished', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
 /** 获取文章生成进度(SSE) GET /article/progress/${param0} */
 export async function getProgress(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -132,6 +175,27 @@ export async function getProgress(
   return request<API.SseEmitter>(`/article/progress/${param0}`, {
     method: 'GET',
     params: { ...queryParams },
+    ...(options || {}),
+  })
+}
+
+/** 导出文章 GET /article/${param0}/export */
+export async function updateArticleContent(taskId: string, content: string) {
+  return request<boolean>(`/article/content/${taskId}`, {
+    method: 'PUT',
+    data: { taskId, content },
+  })
+}
+
+export async function exportArticle(
+  taskId: string,
+  format: 'pdf' | 'docx' = 'pdf',
+  options?: { [key: string]: any },
+) {
+  return request<any>(`/article/${taskId}/export`, {
+    method: 'GET',
+    params: { format },
+    responseType: 'blob',
     ...(options || {}),
   })
 }

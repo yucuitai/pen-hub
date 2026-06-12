@@ -46,6 +46,12 @@ declare namespace API {
     topic?: string
     style?: string
     enabledImageMethods?: string[]
+    contentType?: string
+    platform?: string
+    duration?: string
+    liveType?: string
+    productInfo?: string
+    participantCount?: string
   }
 
   type ArticleQueryRequest = {
@@ -76,6 +82,17 @@ declare namespace API {
     errorMessage?: string
     createTime?: string
     completedTime?: string
+    reviewScore?: number
+    reviewSuggestions?: string[]
+    isFavorited?: number
+    tags?: string[]
+    contentType?: string
+    scriptStructure?: string
+  }
+
+  type ArticleUpdateContentRequest = {
+    taskId?: string
+    content?: string
   }
 
   type BaseResponseAgentExecutionStats = {
@@ -93,6 +110,12 @@ declare namespace API {
   type BaseResponseBoolean = {
     code?: number
     data?: boolean
+    message?: string
+  }
+
+  type BaseResponseListString = {
+    code?: number
+    data?: string[]
     message?: string
   }
 
@@ -129,6 +152,12 @@ declare namespace API {
   type BaseResponseLong = {
     code?: number
     data?: number
+    message?: string
+  }
+
+  type BaseResponseMapStringObject = {
+    code?: number
+    data?: Record<string, any>
     message?: string
   }
 
@@ -221,6 +250,7 @@ declare namespace API {
     userProfile?: string
     userRole?: string
     quota?: number
+    vipLevel?: number
     createTime?: string
     updateTime?: string
   }
@@ -410,5 +440,56 @@ declare namespace API {
     userProfile?: string
     userRole?: string
     createTime?: string
+  }
+
+  type Template = {
+    id?: number
+    name?: string
+    category?: string
+    platform?: string
+    style?: string
+    topicExample?: string
+    recommendedImageMethods?: string
+    description?: string
+    sortOrder?: number
+    status?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type BaseResponsePageTemplate = {
+    code?: number
+    data?: PageTemplate
+    message?: string
+  }
+
+  type PageTemplate = {
+    records?: Template[]
+    pageNumber?: number
+    pageSize?: number
+    totalRow?: number
+    totalPage?: number
+  }
+
+  type BaseResponseTemplate = {
+    code?: number
+    data?: Template
+    message?: string
+  }
+
+  type ArticleFeedback = {
+    id?: number
+    articleId?: number
+    userId?: number
+    rating?: number
+    comment?: string
+    createTime?: string
+  }
+
+  type BaseResponseArticleFeedback = {
+    code?: number
+    data?: ArticleFeedback
+    message?: string
   }
 }

@@ -27,6 +27,9 @@ public class StatisticsController {
     @Resource
     private StatisticsService statisticsService;
 
+    @Resource
+    private com.pen.penhubbackend.service.AgentLogService agentLogService;
+
     /**
      * 获取系统统计数据（仅管理员）
      */
@@ -36,5 +39,16 @@ public class StatisticsController {
     public BaseResponse<StatisticsVO> getStatistics() {
         StatisticsVO statistics = statisticsService.getStatistics();
         return ResultUtils.success(statistics);
+    }
+
+    /**
+     * 获取 AI 调用统计（仅管理员）
+     */
+    @GetMapping("/ai-call-stats")
+    @Operation(summary = "获取 AI 调用统计")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<java.util.Map<String, Object>> getAiCallStats() {
+        java.util.Map<String, Object> stats = agentLogService.getGlobalAiCallStats();
+        return ResultUtils.success(stats);
     }
 }

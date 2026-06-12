@@ -2,6 +2,7 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPersistedstate from 'pinia-plugin-persistedstate'
 
 import App from './App.vue'
 import router from './router'
@@ -14,7 +15,9 @@ import '@/access'
 
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(piniaPersistedstate)
+app.use(pinia)
 app.use(router)
 app.use(Antd)
 // 全局配置ant-design-vue的中文语言

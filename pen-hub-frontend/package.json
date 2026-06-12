@@ -17,12 +17,19 @@
     "openapi2ts": "openapi2ts"
   },
   "dependencies": {
+    "@tiptap/extension-code-block-lowlight": "^3.26.1",
+    "@tiptap/extension-image": "^3.26.1",
+    "@tiptap/extension-link": "^3.26.1",
+    "@tiptap/starter-kit": "^3.26.1",
+    "@tiptap/vue-3": "^3.26.1",
     "@types/sortablejs": "^1.15.9",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.16.1",
     "echarts": "^6.1.0",
+    "lowlight": "^3.3.0",
     "marked": "^18.0.4",
     "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "sortablejs": "^1.15.7",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"

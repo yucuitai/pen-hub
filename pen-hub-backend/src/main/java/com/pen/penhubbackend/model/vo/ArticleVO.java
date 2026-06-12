@@ -109,6 +109,26 @@ public class ArticleVO implements Serializable {
     private LocalDateTime completedTime;
 
     /**
+     * 内容类型：ARTICLE/SHORT_VIDEO_SCRIPT/LIVE_SCRIPT
+     */
+    private String contentType;
+
+    /**
+     * 脚本结构（JSON）
+     */
+    private String scriptStructure;
+
+    /**
+     * 内容质量评分（0-100）
+     */
+    private Integer reviewScore;
+
+    /**
+     * 审核改进建议（JSON数组转List）
+     */
+    private List<String> reviewSuggestions;
+
+    /**
      * 标题方案
      */
     @Data
@@ -163,10 +183,14 @@ public class ArticleVO implements Serializable {
                 new TypeToken<List<OutlineItem>>(){}));
         }
         if (article.getImages() != null) {
-            articleVO.setImages(GsonUtils.fromJson(article.getImages(), 
+            articleVO.setImages(GsonUtils.fromJson(article.getImages(),
                 new TypeToken<List<ImageItem>>(){}));
         }
-        
+        if (article.getReviewSuggestions() != null) {
+            articleVO.setReviewSuggestions(GsonUtils.fromJson(article.getReviewSuggestions(),
+                new TypeToken<List<String>>(){}));
+        }
+
         return articleVO;
     }
 

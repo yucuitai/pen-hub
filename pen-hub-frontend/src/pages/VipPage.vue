@@ -7,8 +7,29 @@
           <CrownOutlined />
           <span>会员专属</span>
         </div>
-        <h1 class="page-title">升级永久会员</h1>
-        <p class="page-subtitle">解锁全部高级功能，无限创作配额，终身有效</p>
+        <h1 class="page-title">选择适合你的会员方案</h1>
+        <p class="page-subtitle">从基础版到旗舰版，满足不同创作需求</p>
+      </div>
+
+      <!-- VIP 分级方案 -->
+      <div class="tier-section">
+        <div v-for="tier in vipTiers" :key="tier.level" :class="['tier-card', { recommended: tier.recommended, active: currentLevel >= tier.level }]">
+          <div v-if="tier.recommended" class="tier-badge">推荐</div>
+          <div class="tier-name">{{ tier.name }}</div>
+          <div class="tier-price">
+            <span class="price-amount">¥{{ tier.price }}</span>
+            <span class="price-unit">/月</span>
+          </div>
+          <div class="tier-features">
+            <div v-for="(feature, idx) in tier.features" :key="idx" class="tier-feature">
+              <CheckCircleOutlined class="feature-check" />
+              <span>{{ feature }}</span>
+            </div>
+          </div>
+          <a-button :type="tier.recommended ? 'primary' : 'default'" block size="large" disabled>
+            {{ currentLevel >= tier.level ? '当前方案' : '即将开放' }}
+          </a-button>
+        </div>
       </div>
 
       <!-- 主内容区：左右布局 -->
@@ -136,6 +157,53 @@ const redeemCode = computed({
   }
 })
 
+// VIP 分级数据
+const vipTiers = [
+  {
+    level: 1,
+    name: '基础版',
+    price: 29,
+    recommended: false,
+    features: [
+      '无限创作配额',
+      '基础配图功能（Pexels/Mermaid/Iconify/Emoji）',
+      '文章导出（Markdown/公众号/小红书）',
+      '文章标签与收藏'
+    ]
+  },
+  {
+    level: 2,
+    name: '专业版',
+    price: 59,
+    recommended: true,
+    features: [
+      '基础版全部功能',
+      'AI 智能生图（Nano Banana）',
+      'SVG 概念示意图',
+      'AI 大纲智能编辑',
+      '内容质量评分报告'
+    ]
+  },
+  {
+    level: 3,
+    name: '旗舰版',
+    price: 99,
+    recommended: false,
+    features: [
+      '专业版全部功能',
+      '批量创作（即将开放）',
+      '优先生成队列',
+      '模板收藏与自定义',
+      'PDF/Word 高级导出'
+    ]
+  }
+]
+
+// 当前用户 VIP 等级
+const currentLevel = computed(() => {
+  return loginUserStore.loginUser?.vipLevel || 0
+})
+
 // 兑换特性列表
 const redeemFeatures = [
   '无限创作配额',
@@ -242,6 +310,98 @@ const handleRedeem = async () => {
 .vip-container {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* VIP 分级样式 */
+.tier-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.tier-card {
+  position: relative;
+  padding: 32px 24px;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.tier-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.tier-card.recommended {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.2);
+}
+
+.tier-card.active {
+  border-color: #52c41a;
+}
+
+.tier-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 16px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.tier-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.tier-price {
+  margin-bottom: 24px;
+}
+
+.price-amount {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.price-unit {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.tier-features {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.tier-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.tier-feature .feature-check {
+  color: #52c41a;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .tier-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 页面头部 */

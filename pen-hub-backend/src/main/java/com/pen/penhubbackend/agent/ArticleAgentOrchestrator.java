@@ -48,6 +48,9 @@ public class ArticleAgentOrchestrator {
     private ContentGeneratorAgent contentGeneratorAgent;
 
     @Resource
+    private ReviewerAgent reviewerAgent;
+
+    @Resource
     private ImageAnalyzerAgent imageAnalyzerAgent;
 
     @Resource
@@ -72,6 +75,7 @@ public class ArticleAgentOrchestrator {
     private static final String KEY_IMAGES = "images";
     private static final String KEY_FULL_CONTENT = "fullContent";
     private static final String KEY_ENABLED_IMAGE_METHODS = "enabledImageMethods";
+    private static final String KEY_REVIEW_RESULT = "reviewResult";
 
     // endregion
 
@@ -280,7 +284,33 @@ public class ArticleAgentOrchestrator {
                         .map(Object::toString)
                         .orElse(null);
                 
-                // 更新状态（使用带占位符的正文）
+                // 提取审核结果
+                ArticleState.ReviewResult reviewResult = finalState.value(KEY_REVIEW_RESULT)
+                        .map(v -> {
+                            if (v instanceof ArticleState.ReviewResult rr) {
+                                return rr;
+                            }
+                            return GsonUtils.fromJson(
+                                    GsonUtils.toJson(v),
+                                    ArticleState.ReviewResult.class
+                            );
+                        })
+                        .orElse(null);
+
+                // 处理审核结果：评分 < 60 分时使用重写内容
+                if (reviewResult != null) {
+                    state.setReviewResult(reviewResult);
+                    if (reviewResult.getReviewScore() != null
+                            && reviewResult.getReviewScore() < 60
+                            && reviewResult.getRewrittenContent() != null
+                            && !reviewResult.getRewrittenContent().isBlank()) {
+                        log.info("审核评分 {} < 60，使用重写内容", reviewResult.getReviewScore());
+                        contentWithPlaceholders = reviewResult.getRewrittenContent();
+                    }
+                    streamHandler.accept(SseMessageTypeEnum.REVIEWER_COMPLETE.getValue());
+                }
+
+                // 更新状态（使用带占位符的正文，可能已被审核 Agent 替换）
                 if (contentWithPlaceholders != null) {
                     state.setContent(contentWithPlaceholders);
                 } else if (content != null) {
@@ -348,20 +378,22 @@ public class ArticleAgentOrchestrator {
 
     /**
      * 构建阶段3图：正文+配图生成（顺序执行）
-     * 流程：正文生成 -> 配图需求分析 -> 并行配图生成 -> 图文合成
+     * 流程：正文生成 -> 内容审核 -> 配图需求分析 -> 并行配图生成 -> 图文合成
      */
     private StateGraph buildPhase3Graph() throws GraphStateException {
         KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
-        
+
         return new StateGraph(keyStrategyFactory)
                 // 节点定义
                 .addNode("content_generator", node_async(contentGeneratorAgent))
+                .addNode("reviewer", node_async(reviewerAgent))
                 .addNode("image_analyzer", node_async(imageAnalyzerAgent))
                 .addNode("parallel_image_generator", node_async(parallelImageGenerator))
                 .addNode("content_merger", node_async(contentMergerAgent))
-                // 边定义：顺序执行
+                // 边定义：顺序执行（Reviewer 插入在正文生成之后）
                 .addEdge(START, "content_generator")
-                .addEdge("content_generator", "image_analyzer")
+                .addEdge("content_generator", "reviewer")
+                .addEdge("reviewer", "image_analyzer")
                 .addEdge("image_analyzer", "parallel_image_generator")
                 .addEdge("parallel_image_generator", "content_merger")
                 .addEdge("content_merger", END);
@@ -388,6 +420,7 @@ public class ArticleAgentOrchestrator {
             strategies.put(KEY_IMAGES, new ReplaceStrategy());
             strategies.put(KEY_FULL_CONTENT, new ReplaceStrategy());
             strategies.put(KEY_ENABLED_IMAGE_METHODS, new ReplaceStrategy());
+            strategies.put(KEY_REVIEW_RESULT, new ReplaceStrategy());
             return strategies;
         };
     }

@@ -115,6 +115,51 @@ public class Article implements Serializable {
     private String errorMessage;
 
     /**
+     * 状态快照（JSON，断点续传用）
+     */
+    private String stateSnapshot;
+
+    /**
+     * 收藏状态：0-未收藏 1-已收藏
+     */
+    private Integer isFavorited;
+
+    /**
+     * 文章标签（JSON数组）
+     */
+    private String tags;
+
+    /**
+     * 内容质量评分（0-100）
+     */
+    private Integer reviewScore;
+
+    /**
+     * 审核改进建议（JSON数组）
+     */
+    private String reviewSuggestions;
+
+    /**
+     * 内容类型：ARTICLE/SHORT_VIDEO_SCRIPT/LIVE_SCRIPT/INTERVIEW_SCRIPT/EVENT_SCRIPT/DRAMA_SCRIPT
+     */
+    private String contentType;
+
+    /**
+     * 脚本结构（JSON，存储分镜/环节/对话等）
+     */
+    private String scriptStructure;
+
+    /**
+     * 平台（脚本类型）：douyin/bilibili/weixin_video
+     */
+    private String platform;
+
+    /**
+     * 时长（脚本类型）：15s/30s/60s/3min/1h/2h/4h
+     */
+    private String duration;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

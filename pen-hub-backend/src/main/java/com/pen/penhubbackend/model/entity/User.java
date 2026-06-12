@@ -79,6 +79,11 @@ public class User implements Serializable {
     private String vipType;
 
     /**
+     * VIP等级：0-普通用户 1-基础版 2-专业版 3-旗舰版
+     */
+    private Integer vipLevel;
+
+    /**
      * 编辑时间
      */
     private LocalDateTime editTime;

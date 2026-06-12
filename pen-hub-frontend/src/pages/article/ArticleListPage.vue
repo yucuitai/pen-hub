@@ -4,8 +4,8 @@
     <div class="page-header">
       <div class="header-container">
         <div class="header-content">
-          <h1 class="page-title">历史记录</h1>
-          <p class="page-subtitle">管理您创作的所有文章</p>
+          <h1 class="page-title">{{ favoriteOnly ? '我的收藏' : '历史记录' }}</h1>
+          <p class="page-subtitle">{{ favoriteOnly ? '收藏的文章' : '管理您创作的所有文章' }}</p>
         </div>
         <a-button type="primary" size="large" @click="goToCreate" class="create-btn">
           <template #icon>
@@ -55,10 +55,19 @@
             <a-select-option value="PENDING">等待中</a-select-option>
             <a-select-option value="FAILED">失败</a-select-option>
           </a-select>
+
+          <a-button
+            :class="['favorite-filter-btn', { active: favoriteOnly }]"
+            @click="toggleFavoriteFilter"
+          >
+            <HeartFilled v-if="favoriteOnly" />
+            <HeartOutlined v-else />
+            收藏
+          </a-button>
         </div>
 
         <div class="filter-right">
-          <span class="total-count">共 {{ pagination.total }} 篇文章</span>
+          <span class="total-count">共 {{ pagination.total }} 篇{{ favoriteOnly ? '收藏' : '文章' }}</span>
         </div>
       </div>
 
@@ -94,6 +103,16 @@
 
             <template v-else-if="column.key === 'action'">
               <div class="action-group">
+                <a-button
+                  v-if="isUnfinished(record)"
+                  type="link"
+                  size="small"
+                  @click="continueArticle(record)"
+                  class="action-btn continue-btn"
+                >
+                  <PlayCircleOutlined />
+                  继续创作
+                </a-button>
                 <a-button type="link" size="small" @click="viewArticle(record)" class="action-btn view-btn">
                   <EyeOutlined />
                   查看
@@ -109,7 +128,7 @@
                   重试
                 </a-button>
                 <a-button
-                  v-else
+                  v-else-if="record.status === 'COMPLETED'"
                   type="link"
                   size="small"
                   @click="exportArticle(record)"
@@ -137,8 +156,8 @@
           <template #emptyText>
             <div class="empty-state">
               <FileTextOutlined class="empty-icon" />
-              <p class="empty-title">暂无文章</p>
-              <p class="empty-desc">开始创作您的第一篇文章吧</p>
+              <p class="empty-title">{{ favoriteOnly ? '暂无收藏的文章' : '暂无文章' }}</p>
+              <p class="empty-desc">{{ favoriteOnly ? '在文章详情页点击收藏按钮即可收藏' : '开始创作您的第一篇文章吧' }}</p>
               <a-button type="primary" @click="goToCreate">
                 <PlusOutlined />
                 创作新文章
@@ -162,9 +181,12 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   FileTextOutlined,
-  RedoOutlined
+  RedoOutlined,
+  HeartOutlined,
+  HeartFilled,
+  PlayCircleOutlined
 } from '@ant-design/icons-vue'
-import { listArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
+import { listArticle, listFavoriteArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
 import dayjs, { type Dayjs } from 'dayjs'
 
 const router = useRouter()
@@ -173,6 +195,7 @@ const router = useRouter()
 const searchKeyword = ref('')
 const dateRange = ref<[Dayjs, Dayjs] | null>(null)
 const statusFilter = ref<string>('')
+const favoriteOnly = ref(false)
 
 const columns = [
   {
@@ -220,35 +243,40 @@ const pagination = ref({
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await listArticle({
-      pageNum: pagination.value.current,
-      pageSize: pagination.value.pageSize,
-      // 如果后端支持，可以传递搜索参数
-      // keyword: searchKeyword.value,
-      // status: statusFilter.value,
-    })
+    // 收藏筛选使用后端分页查询
+    const res = favoriteOnly.value
+      ? await listFavoriteArticle({
+          pageNum: pagination.value.current,
+          pageSize: pagination.value.pageSize,
+        })
+      : await listArticle({
+          pageNum: pagination.value.current,
+          pageSize: pagination.value.pageSize,
+        })
     const pageData = res.data.data
     let records = pageData?.records || []
 
-    // 前端过滤（如果后端不支持）
-    if (searchKeyword.value) {
-      const keyword = searchKeyword.value.toLowerCase()
-      records = records.filter((item: API.ArticleVO) =>
-        item.mainTitle?.toLowerCase().includes(keyword) ||
-        item.topic?.toLowerCase().includes(keyword)
-      )
-    }
+    // 非收藏模式下的前端过滤
+    if (!favoriteOnly.value) {
+      if (searchKeyword.value) {
+        const keyword = searchKeyword.value.toLowerCase()
+        records = records.filter((item: API.ArticleVO) =>
+          item.mainTitle?.toLowerCase().includes(keyword) ||
+          item.topic?.toLowerCase().includes(keyword)
+        )
+      }
 
-    if (statusFilter.value) {
-      records = records.filter((item: API.ArticleVO) => item.status === statusFilter.value)
-    }
+      if (statusFilter.value) {
+        records = records.filter((item: API.ArticleVO) => item.status === statusFilter.value)
+      }
 
-    if (dateRange.value) {
-      const [start, end] = dateRange.value
-      records = records.filter((item: API.ArticleVO) => {
-        const createTime = dayjs(item.createTime)
-        return createTime.isAfter(start.startOf('day')) && createTime.isBefore(end.endOf('day'))
-      })
+      if (dateRange.value) {
+        const [start, end] = dateRange.value
+        records = records.filter((item: API.ArticleVO) => {
+          const createTime = dayjs(item.createTime)
+          return createTime.isAfter(start.startOf('day')) && createTime.isBefore(end.endOf('day'))
+        })
+      }
     }
 
     dataSource.value = records
@@ -274,6 +302,12 @@ const handleSearchChange = () => {
 }
 
 const handleDateChange = () => {
+  pagination.value.current = 1
+  loadData()
+}
+
+const toggleFavoriteFilter = () => {
+  favoriteOnly.value = !favoriteOnly.value
   pagination.value.current = 1
   loadData()
 }
@@ -355,6 +389,19 @@ const retryArticle = (record: API.ArticleVO) => {
         }
       })
     }
+  })
+}
+
+// 判断文章是否未完成（可继续创作）
+const isUnfinished = (record: API.ArticleVO) => {
+  return record.status !== 'COMPLETED' && record.status !== 'FAILED'
+}
+
+// 继续创作未完成的文章
+const continueArticle = (record: API.ArticleVO) => {
+  router.push({
+    path: '/create',
+    query: { taskId: record.taskId || '' }
   })
 }
 
@@ -500,6 +547,25 @@ onMounted(() => {
   .status-select {
     :deep(.ant-select-selector) {
       border-radius: var(--radius-md) !important;
+    }
+  }
+
+  .favorite-filter-btn {
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: all var(--transition-fast);
+
+    &:hover {
+      border-color: #ff4d4f;
+      color: #ff4d4f;
+    }
+
+    &.active {
+      background: #fff1f0;
+      border-color: #ff4d4f;
+      color: #ff4d4f;
     }
   }
 
@@ -660,6 +726,14 @@ onMounted(() => {
 
       &:hover {
         color: #DC2626;
+      }
+    }
+
+    &.continue-btn {
+      color: #52c41a;
+
+      &:hover {
+        color: #389e0d;
       }
     }
 

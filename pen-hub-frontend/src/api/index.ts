@@ -8,6 +8,8 @@ import * as paymentController from './paymentController'
 import * as articleController from './articleController'
 import * as statisticsController from './statisticsController'
 import * as healthController from './healthController'
+import * as templateController from './templateController'
+import * as feedbackController from './feedbackController'
 export default {
   yonghuguanli,
   redemptionController,
@@ -15,4 +17,6 @@ export default {
   articleController,
   statisticsController,
   healthController,
+  templateController,
+  feedbackController,
 }

@@ -13,9 +13,22 @@ export const isAdmin = (user?: API.LoginUserVO): boolean => {
 
 /**
  * 判断用户是否为 VIP（包括管理员）
+ * 支持新的 vipLevel 分级体系
  */
 export const isVip = (user?: API.LoginUserVO): boolean => {
-  return user?.userRole === USER_ROLE_VIP || isAdmin(user)
+  if (isAdmin(user)) return true
+  if (user?.userRole === USER_ROLE_VIP) return true
+  return (user?.vipLevel ?? 0) > 0
+}
+
+/**
+ * 获取 VIP 等级名称
+ */
+export const getVipLevelName = (user?: API.LoginUserVO): string => {
+  if (isAdmin(user)) return '管理员'
+  const level = user?.vipLevel ?? 0
+  const names: Record<number, string> = { 0: '普通用户', 1: '基础版', 2: '专业版', 3: '旗舰版' }
+  return names[level] || '普通用户'
 }
 
 /**

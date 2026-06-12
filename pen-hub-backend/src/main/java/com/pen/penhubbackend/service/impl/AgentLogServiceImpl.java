@@ -86,4 +86,39 @@ public class AgentLogServiceImpl extends ServiceImpl<AgentLogMapper, AgentLog> i
                 .logs(logs)
                 .build();
     }
+
+    @Override
+    public Map<String, Object> getGlobalAiCallStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // 查询所有日志
+        List<AgentLog> allLogs = this.list();
+        int totalCalls = allLogs.size();
+        int successCalls = 0;
+        int failedCalls = 0;
+        long totalDuration = 0;
+
+        Map<String, Integer> agentCallCounts = new HashMap<>();
+
+        for (AgentLog log : allLogs) {
+            if ("SUCCESS".equals(log.getStatus())) {
+                successCalls++;
+            } else if ("FAILED".equals(log.getStatus())) {
+                failedCalls++;
+            }
+            if (log.getDurationMs() != null) {
+                totalDuration += log.getDurationMs();
+            }
+            agentCallCounts.merge(log.getAgentName(), 1, Integer::sum);
+        }
+
+        stats.put("totalCalls", totalCalls);
+        stats.put("successCalls", successCalls);
+        stats.put("failedCalls", failedCalls);
+        stats.put("failureRate", totalCalls > 0 ? Math.round(failedCalls * 100.0 / totalCalls * 10) / 10.0 : 0);
+        stats.put("avgDurationMs", totalCalls > 0 ? totalDuration / totalCalls : 0);
+        stats.put("agentCallCounts", agentCallCounts);
+
+        return stats;
+    }
 }

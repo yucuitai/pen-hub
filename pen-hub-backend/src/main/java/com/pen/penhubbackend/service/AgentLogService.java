@@ -34,4 +34,11 @@ public interface AgentLogService extends IService<AgentLog> {
      * @return 执行统计
      */
     AgentExecutionStats getExecutionStats(String taskId);
+
+    /**
+     * 获取全局 AI 调用统计
+     *
+     * @return AI 调用统计信息
+     */
+    java.util.Map<String, Object> getGlobalAiCallStats();
 }

@@ -199,6 +199,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setImages(GsonUtils.toJson(state.getImages()));
         article.setCompletedTime(LocalDateTime.now());
 
+        // 保存审核结果
+        if (state.getReviewResult() != null) {
+            article.setReviewScore(state.getReviewResult().getReviewScore());
+            if (state.getReviewResult().getSuggestions() != null) {
+                article.setReviewSuggestions(GsonUtils.toJson(state.getReviewResult().getSuggestions()));
+            }
+        }
+
         this.updateById(article);
         log.info("文章保存成功, taskId={}", taskId);
     }
@@ -394,11 +402,100 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
     }
 
+    @Override
+    public void saveStateSnapshot(String taskId, ArticleState state) {
+        Article article = getByTaskId(taskId);
+        if (article == null) {
+            log.error("文章记录不存在, taskId={}", taskId);
+            return;
+        }
+        article.setStateSnapshot(GsonUtils.toJson(state));
+        this.updateById(article);
+        log.info("状态快照已保存, taskId={}", taskId);
+    }
+
+    @Override
+    public ArticleVO getUnfinishedArticle(User loginUser) {
+        QueryWrapper query = QueryWrapper.create()
+                .eq("user_id", loginUser.getId())
+                .ne("status", ArticleStatusEnum.COMPLETED.getValue())
+                .ne("status", ArticleStatusEnum.FAILED.getValue())
+                .in("phase",
+                        ArticlePhaseEnum.TITLE_GENERATING.getValue(),
+                        ArticlePhaseEnum.TITLE_SELECTING.getValue(),
+                        ArticlePhaseEnum.OUTLINE_GENERATING.getValue(),
+                        ArticlePhaseEnum.OUTLINE_EDITING.getValue(),
+                        ArticlePhaseEnum.CONTENT_GENERATING.getValue())
+                .eq("is_delete", 0)
+                .orderBy("create_time", false)
+                .limit(1);
+        Article article = this.getOne(query);
+        return ArticleVO.objToVo(article);
+    }
+
+    @Override
+    public Page<ArticleVO> listFavoriteArticleByPage(long pageNum, long pageSize, User loginUser) {
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("is_delete", 0)
+                .eq("is_favorited", 1)
+                .eq("user_id", loginUser.getId())
+                .orderBy("create_time", false);
+
+        Page<Article> articlePage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
+        return convertToVOPage(articlePage);
+    }
+
+    @Override
+    public boolean toggleFavorite(String taskId, User loginUser) {
+        Article article = getByTaskId(taskId);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        checkArticlePermission(article, loginUser);
+        boolean newState = article.getIsFavorited() == null || article.getIsFavorited() == 0;
+        article.setIsFavorited(newState ? 1 : 0);
+        this.updateById(article);
+        log.info("文章收藏状态已切换, taskId={}, favorited={}", taskId, newState);
+        return newState;
+    }
+
+    @Override
+    public void updateTags(String taskId, List<String> tags, User loginUser) {
+        Article article = getByTaskId(taskId);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        checkArticlePermission(article, loginUser);
+        article.setTags(GsonUtils.toJson(tags));
+        this.updateById(article);
+        log.info("文章标签已更新, taskId={}, tags={}", taskId, tags);
+    }
+
+    @Override
+    public void updateContent(String taskId, String content, User loginUser) {
+        Article article = getByTaskId(taskId);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        checkArticlePermission(article, loginUser);
+
+        // 仅已完成的文章可编辑
+        ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
+                ErrorCode.OPERATION_ERROR, "仅已完成的文章可编辑");
+
+        article.setContent(content);
+        article.setFullContent(content);
+        this.updateById(article);
+        log.info("文章内容已更新, taskId={}", taskId);
+    }
+
     /**
      * 判断是否为 VIP 或管理员
+     * 支持新的 vipLevel 分级体系
      */
     private boolean isVipOrAdmin(User user) {
-        return ADMIN_ROLE.equals(user.getUserRole()) || 
-               VIP_ROLE.equals(user.getUserRole());
+        if (ADMIN_ROLE.equals(user.getUserRole())) {
+            return true;
+        }
+        // 兼容旧的 vip 角色
+        if (VIP_ROLE.equals(user.getUserRole())) {
+            return true;
+        }
+        // 新的 vipLevel 检查
+        return user.getVipLevel() != null && user.getVipLevel() > 0;
     }
 }

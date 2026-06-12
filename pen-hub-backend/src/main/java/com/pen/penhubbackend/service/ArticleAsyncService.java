@@ -2,6 +2,11 @@ package com.pen.penhubbackend.service;
 
 import com.google.gson.reflect.TypeToken;
 import com.pen.penhubbackend.agent.ArticleAgentOrchestrator;
+import com.pen.penhubbackend.agent.ScriptAgentOrchestrator;
+import com.pen.penhubbackend.agent.LiveScriptOrchestrator;
+import com.pen.penhubbackend.agent.EventScriptOrchestrator;
+import com.pen.penhubbackend.agent.InterviewScriptOrchestrator;
+import com.pen.penhubbackend.agent.DramaScriptOrchestrator;
 import com.pen.penhubbackend.agent.config.AgentConfig;
 import com.pen.penhubbackend.manager.SseEmitterManager;
 import com.pen.penhubbackend.model.dto.article.ArticleState;
@@ -36,6 +41,21 @@ public class ArticleAsyncService {
 
     @Resource
     private ArticleAgentOrchestrator articleAgentOrchestrator;
+
+    @Resource
+    private ScriptAgentOrchestrator scriptAgentOrchestrator;
+
+    @Resource
+    private LiveScriptOrchestrator liveScriptOrchestrator;
+
+    @Resource
+    private InterviewScriptOrchestrator interviewScriptOrchestrator;
+
+    @Resource
+    private EventScriptOrchestrator eventScriptOrchestrator;
+
+    @Resource
+    private DramaScriptOrchestrator dramaScriptOrchestrator;
 
     @Resource
     private AgentConfig agentConfig;
@@ -185,6 +205,9 @@ public class ArticleAsyncService {
     public void executePhase3(String taskId) {
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
         log.info("阶段3异步任务开始, taskId={}, 使用多智能体编排={}", taskId, useOrchestrator);
+
+        // 更新阶段为生成正文中
+        articleService.updatePhase(taskId, ArticlePhaseEnum.CONTENT_GENERATING);
         
         try {
             // 获取文章信息
@@ -337,6 +360,9 @@ public class ArticleAsyncService {
             data.put("outline", state.getOutline().getSections());
         } else if (SseMessageTypeEnum.AGENT3_COMPLETE.getValue().equals(message)) {
             data.put("type", SseMessageTypeEnum.AGENT3_COMPLETE.getValue());
+        } else if (SseMessageTypeEnum.REVIEWER_COMPLETE.getValue().equals(message)) {
+            data.put("type", SseMessageTypeEnum.REVIEWER_COMPLETE.getValue());
+            data.put("reviewResult", state.getReviewResult());
         } else if (SseMessageTypeEnum.AGENT4_COMPLETE.getValue().equals(message)) {
             data.put("type", SseMessageTypeEnum.AGENT4_COMPLETE.getValue());
             data.put("imageRequirements", state.getImageRequirements());
@@ -360,6 +386,340 @@ public class ArticleAsyncService {
         Map<String, Object> data = new HashMap<>();
         data.put("type", type.getValue());
         data.putAll(additionalData);
+        sseEmitterManager.send(taskId, GsonUtils.toJson(data));
+    }
+
+    // region 脚本生成
+
+    /**
+     * 异步执行短视频脚本生成
+     *
+     * @param taskId   任务ID
+     * @param topic    选题
+     * @param platform 平台
+     * @param duration 时长
+     * @param style    风格
+     */
+    @Async("articleExecutor")
+    public void executeScriptGeneration(String taskId, String topic, String platform, String duration, String style) {
+        log.info("短视频脚本异步任务开始, taskId={}, topic={}, platform={}", taskId, topic, platform);
+
+        try {
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
+            articleService.updatePhase(taskId, ArticlePhaseEnum.SCRIPT_HOOK_GENERATING);
+
+            com.pen.penhubbackend.model.dto.script.ScriptState state = com.pen.penhubbackend.model.dto.script.ScriptState.builder()
+                    .taskId(taskId)
+                    .topic(topic)
+                    .platform(platform)
+                    .duration(duration)
+                    .style(style)
+                    .build();
+
+            scriptAgentOrchestrator.executeScriptGeneration(state, message -> {
+                handleScriptMessage(taskId, message, state);
+            });
+
+            // 保存脚本内容到数据库
+            Article article = articleService.getByTaskId(taskId);
+            if (article != null) {
+                article.setContent(state.getMarkdownContent());
+                article.setFullContent(state.getMarkdownContent());
+                article.setScriptStructure(state.getScriptStructure());
+                articleService.updateById(article);
+            }
+
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
+            sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
+            sseEmitterManager.complete(taskId);
+
+            log.info("短视频脚本异步任务完成, taskId={}", taskId);
+        } catch (Exception e) {
+            log.error("短视频脚本异步任务失败, taskId={}", taskId, e);
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
+            sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
+            sseEmitterManager.complete(taskId);
+        }
+    }
+
+    /**
+     * 异步执行直播台本生成
+     *
+     * @param taskId          任务ID
+     * @param topic           主题
+     * @param platform        平台
+     * @param duration        时长
+     * @param liveType        直播类型
+     * @param productInfo     产品信息
+     * @param participantCount 参与人数
+     */
+    @Async("articleExecutor")
+    public void executeLiveScriptGeneration(String taskId, String topic, String platform, String duration,
+                                            String liveType, String productInfo, String participantCount) {
+        log.info("直播台本异步任务开始, taskId={}, topic={}, liveType={}", taskId, topic, liveType);
+
+        try {
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
+            articleService.updatePhase(taskId, ArticlePhaseEnum.LIVE_OUTLINE_GENERATING);
+
+            com.pen.penhubbackend.model.dto.script.LiveScriptState state = com.pen.penhubbackend.model.dto.script.LiveScriptState.builder()
+                    .taskId(taskId)
+                    .topic(topic)
+                    .platform(platform)
+                    .duration(duration)
+                    .liveType(liveType)
+                    .productInfo(productInfo)
+                    .participantCount(participantCount)
+                    .build();
+
+            liveScriptOrchestrator.executeLiveScriptGeneration(state, message -> {
+                handleLiveScriptMessage(taskId, message, state);
+            });
+
+            // 保存直播台本到数据库
+            Article article = articleService.getByTaskId(taskId);
+            if (article != null) {
+                article.setContent(state.getMarkdownContent());
+                article.setFullContent(state.getMarkdownContent());
+                article.setScriptStructure(state.getScriptStructure());
+                articleService.updateById(article);
+            }
+
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
+            sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
+            sseEmitterManager.complete(taskId);
+
+            log.info("直播台本异步任务完成, taskId={}", taskId);
+        } catch (Exception e) {
+            log.error("直播台本异步任务失败, taskId={}", taskId, e);
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
+            sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
+            sseEmitterManager.complete(taskId);
+        }
+    }
+
+    /**
+     * 处理脚本 Agent 消息
+     */
+    private void handleScriptMessage(String taskId, String message, com.pen.penhubbackend.model.dto.script.ScriptState state) {
+        Map<String, Object> data = buildScriptMessageData(message, state);
+        if (data != null) {
+            sseEmitterManager.send(taskId, GsonUtils.toJson(data));
+        }
+    }
+
+    /**
+     * 处理直播台本 Agent 消息
+     */
+    private void handleLiveScriptMessage(String taskId, String message, com.pen.penhubbackend.model.dto.script.LiveScriptState state) {
+        Map<String, Object> data = buildLiveScriptMessageData(message, state);
+        if (data != null) {
+            sseEmitterManager.send(taskId, GsonUtils.toJson(data));
+        }
+    }
+
+    /**
+     * 构建脚本消息数据
+     */
+    private Map<String, Object> buildScriptMessageData(String message, com.pen.penhubbackend.model.dto.script.ScriptState state) {
+        Map<String, Object> data = new HashMap<>();
+
+        // 处理流式消息
+        String outlineStreamingPrefix = SseMessageTypeEnum.SCRIPT_OUTLINE_STREAMING.getStreamingPrefix();
+        String contentStreamingPrefix = SseMessageTypeEnum.SCRIPT_CONTENT_STREAMING.getStreamingPrefix();
+
+        if (message.startsWith(outlineStreamingPrefix)) {
+            data.put("type", SseMessageTypeEnum.SCRIPT_OUTLINE_STREAMING.getValue());
+            data.put("content", message.substring(outlineStreamingPrefix.length()));
+            return data;
+        }
+        if (message.startsWith(contentStreamingPrefix)) {
+            data.put("type", SseMessageTypeEnum.SCRIPT_CONTENT_STREAMING.getValue());
+            data.put("content", message.substring(contentStreamingPrefix.length()));
+            return data;
+        }
+
+        // 处理完成消息
+        if (SseMessageTypeEnum.SCRIPT_HOOK_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("hookResult", state.getHookResult());
+        } else if (SseMessageTypeEnum.SCRIPT_OUTLINE_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("outline", state.getOutline());
+        } else if (SseMessageTypeEnum.SCRIPT_CONTENT_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("contentResult", state.getContentResult());
+        } else if (SseMessageTypeEnum.SCRIPT_REVIEW_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("reviewResult", state.getReviewResult());
+        } else if (SseMessageTypeEnum.SCRIPT_MERGE_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("scriptStructure", state.getScriptStructure());
+            data.put("markdownContent", state.getMarkdownContent());
+            data.put("plainTextContent", state.getPlainTextContent());
+        } else {
+            return null;
+        }
+        return data;
+    }
+
+    /**
+     * 构建直播台本消息数据
+     */
+    private Map<String, Object> buildLiveScriptMessageData(String message, com.pen.penhubbackend.model.dto.script.LiveScriptState state) {
+        Map<String, Object> data = new HashMap<>();
+
+        // 处理流式消息
+        String scriptStreamingPrefix = SseMessageTypeEnum.LIVE_SCRIPT_STREAMING.getStreamingPrefix();
+        if (message.startsWith(scriptStreamingPrefix)) {
+            data.put("type", SseMessageTypeEnum.LIVE_SCRIPT_STREAMING.getValue());
+            data.put("content", message.substring(scriptStreamingPrefix.length()));
+            return data;
+        }
+
+        // 处理完成消息
+        if (SseMessageTypeEnum.LIVE_OUTLINE_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("outline", state.getOutline());
+        } else if (SseMessageTypeEnum.LIVE_SCRIPT_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("scriptResult", state.getScriptResult());
+        } else if (SseMessageTypeEnum.LIVE_INTERACTION_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("interactionResult", state.getInteractionResult());
+        } else if (SseMessageTypeEnum.LIVE_EMERGENCY_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("emergencyResult", state.getEmergencyResult());
+        } else if (SseMessageTypeEnum.LIVE_MERGE_COMPLETE.getValue().equals(message)) {
+            data.put("type", message);
+            data.put("scriptStructure", state.getScriptStructure());
+            data.put("markdownContent", state.getMarkdownContent());
+        } else {
+            return null;
+        }
+        return data;
+    }
+
+    // endregion
+
+    // region 访谈脚本生成
+
+    @Async("articleExecutor")
+    public void executeInterviewScriptGeneration(String taskId, String topic, String platform, String duration, String style) {
+        log.info("访谈脚本异步任务开始, taskId={}, topic={}", taskId, topic);
+        try {
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
+            articleService.updatePhase(taskId, ArticlePhaseEnum.INTERVIEW_OUTLINE_GENERATING);
+
+            com.pen.penhubbackend.model.dto.script.InterviewState state =
+                    com.pen.penhubbackend.model.dto.script.InterviewState.builder()
+                            .taskId(taskId).topic(topic).platform(platform).duration(duration).style(style).build();
+
+            interviewScriptOrchestrator.executeInterviewScriptGeneration(state, message -> handleGenericScriptMessage(taskId, message));
+
+            Article article = articleService.getByTaskId(taskId);
+            if (article != null) {
+                article.setContent(state.getMarkdownContent());
+                article.setFullContent(state.getMarkdownContent());
+                article.setScriptStructure(state.getScriptStructure());
+                articleService.updateById(article);
+            }
+
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
+            sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
+            sseEmitterManager.complete(taskId);
+        } catch (Exception e) {
+            log.error("访谈脚本异步任务失败, taskId={}", taskId, e);
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
+            sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
+            sseEmitterManager.complete(taskId);
+        }
+    }
+
+    // endregion
+
+    // region 活动台本生成
+
+    @Async("articleExecutor")
+    public void executeEventScriptGeneration(String taskId, String topic, String platform, String duration,
+                                              String eventType, String participantCount) {
+        log.info("活动台本异步任务开始, taskId={}, topic={}", taskId, topic);
+        try {
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
+            articleService.updatePhase(taskId, ArticlePhaseEnum.EVENT_OUTLINE_GENERATING);
+
+            com.pen.penhubbackend.model.dto.script.EventScriptState state =
+                    com.pen.penhubbackend.model.dto.script.EventScriptState.builder()
+                            .taskId(taskId).topic(topic).platform(platform).duration(duration)
+                            .eventType(eventType).participantCount(participantCount).build();
+
+            eventScriptOrchestrator.executeEventScriptGeneration(state, message -> handleGenericScriptMessage(taskId, message));
+
+            Article article = articleService.getByTaskId(taskId);
+            if (article != null) {
+                article.setContent(state.getMarkdownContent());
+                article.setFullContent(state.getMarkdownContent());
+                article.setScriptStructure(state.getScriptStructure());
+                articleService.updateById(article);
+            }
+
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
+            sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
+            sseEmitterManager.complete(taskId);
+        } catch (Exception e) {
+            log.error("活动台本异步任务失败, taskId={}", taskId, e);
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
+            sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
+            sseEmitterManager.complete(taskId);
+        }
+    }
+
+    // endregion
+
+    // region 剧本生成
+
+    @Async("articleExecutor")
+    public void executeDramaScriptGeneration(String taskId, String topic, String platform, String duration,
+                                              String genre, String style) {
+        log.info("剧本异步任务开始, taskId={}, topic={}", taskId, topic);
+        try {
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
+            articleService.updatePhase(taskId, ArticlePhaseEnum.DRAMA_CHARACTER_GENERATING);
+
+            com.pen.penhubbackend.model.dto.drama.DramaState state =
+                    com.pen.penhubbackend.model.dto.drama.DramaState.builder()
+                            .taskId(taskId).topic(topic).platform(platform).duration(duration)
+                            .genre(genre).style(style).build();
+
+            dramaScriptOrchestrator.executeDramaScriptGeneration(state, message -> handleGenericScriptMessage(taskId, message));
+
+            Article article = articleService.getByTaskId(taskId);
+            if (article != null) {
+                article.setContent(state.getMarkdownContent());
+                article.setFullContent(state.getMarkdownContent());
+                article.setScriptStructure(state.getScriptStructure());
+                articleService.updateById(article);
+            }
+
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
+            sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
+            sseEmitterManager.complete(taskId);
+        } catch (Exception e) {
+            log.error("剧本异步任务失败, taskId={}", taskId, e);
+            articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
+            sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
+            sseEmitterManager.complete(taskId);
+        }
+    }
+
+    // endregion
+
+    /**
+     * 通用脚本消息处理（转发 SSE 消息）
+     */
+    private void handleGenericScriptMessage(String taskId, String message) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("type", message);
         sseEmitterManager.send(taskId, GsonUtils.toJson(data));
     }
 }

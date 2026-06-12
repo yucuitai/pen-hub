@@ -28,5 +28,36 @@ public class ArticleCreateRequest implements Serializable {
      */
     private List<String> enabledImageMethods;
 
+    /**
+     * 内容类型：ARTICLE / SHORT_VIDEO_SCRIPT / LIVE_SCRIPT
+     * 默认为 ARTICLE
+     */
+    private String contentType;
+
+    /**
+     * 平台（脚本类型必填）：douyin/bilibili/weixin_video
+     */
+    private String platform;
+
+    /**
+     * 时长（脚本类型必填）：15s/30s/60s/3min（短视频）/ 1h/2h/4h（直播）
+     */
+    private String duration;
+
+    /**
+     * 直播类型（直播台本必填）：ecommerce/knowledge/event
+     */
+    private String liveType;
+
+    /**
+     * 产品信息（电商直播场景）
+     */
+    private String productInfo;
+
+    /**
+     * 参与人数（直播场景）
+     */
+    private String participantCount;
+
     private static final long serialVersionUID = 1L;
 }
